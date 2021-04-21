@@ -15,3 +15,9 @@
 extern unsigned int ccci_debug_enable;
 int get_dump_buf_usage(char buf[], int size);
 extern void spm_ap_mdsrc_req(unsigned char);
+//<2016/11/09-ychuang,[S1] Check TA restore status before starting the modem.
+#define  Wait_TA_Restore
+#if defined(Wait_TA_Restore)
+atomic_t wait_nv;
+#endif
+//<2016/11/09-ychuang,

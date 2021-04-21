@@ -38,8 +38,8 @@ unsigned int chip_reset_only = 0;
 
 #define REMOVE_USELESS_LOG 1
 
-#define STP_POLL_CPUPCR_NUM 16
-#define STP_POLL_CPUPCR_DELAY 10
+#define STP_POLL_CPUPCR_NUM 5
+#define STP_POLL_CPUPCR_DELAY 5
 #define STP_RETRY_OPTIMIZE 0
 
 /* global variables */
@@ -599,6 +599,8 @@ static VOID stp_rest_ctx_state(VOID)
 	stp_core_ctx.sequence.winspace = MTKSTP_WINSIZE;
 	stp_core_ctx.sequence.expected_rxseq = 0;
 	stp_core_ctx.sequence.retry_times = 0;
+	stp_core_ctx.sequence.rx_resync = 0;
+	stp_core_ctx.sequence.rx_resync_seq = 0xFF;
 	stp_core_ctx.inband_rst_set = 0;
 
 	stp_ctx_unlock(&stp_core_ctx);
@@ -660,8 +662,6 @@ VOID stp_do_tx_timeout(VOID)
 		STP_DBG_FUNC("current TX timeout package has not received ACK yet,retry_times(%d)\n",
 		g_retry_times);
 #endif
-	/*polling cpupcr when no ack occurs at first retry */
-	stp_dbg_poll_cpupcr(STP_POLL_CPUPCR_NUM, STP_POLL_CPUPCR_DELAY, 1);
 	seq = stp_core_ctx.sequence.rxack;
 	INDEX_INC(seq);
 
@@ -754,6 +754,8 @@ VOID stp_do_tx_timeout(VOID)
 	}
 
 	stp_ctx_unlock(&stp_core_ctx);
+	/*polling cpupcr when no ack occurs at first retry */
+	stp_dbg_poll_cpupcr(STP_POLL_CPUPCR_NUM, STP_POLL_CPUPCR_DELAY, 1);
 	STP_WARN_FUNC
 	    ("==============================================================================#\n");
 }
@@ -1287,6 +1289,8 @@ static VOID stp_process_packet(VOID)
 	/*If bluez, direct send packet to hci_core not through RX buffer! */
 	if ((stp_core_ctx.sequence.expected_rxseq == stp_core_ctx.parser.seq) &&
 		(stp_core_ctx.parser.type == BT_TASK_INDX) && STP_BT_STK_IS_BLUEZ(stp_core_ctx)) {
+		stp_core_ctx.sequence.rx_resync = 0;
+
 		/*Indicate packet to hci_stp */
 		STP_DBG_FUNC("Send Packet to BT_SUBFUCTION, len = %d\n", stp_core_ctx.rx_counter);
 
@@ -1311,6 +1315,8 @@ static VOID stp_process_packet(VOID)
 	}
 	/* sequence matches expected, enqueue packet */
 	else if (stp_core_ctx.sequence.expected_rxseq == stp_core_ctx.parser.seq) {
+		stp_core_ctx.sequence.rx_resync = 0;
+
 		is_function_active =
 			((*sys_check_function_status) (stp_core_ctx.parser.type, OP_FUNCTION_ACTIVE) ==
 			 STATUS_FUNCTION_ACTIVE);
@@ -1389,9 +1395,10 @@ static VOID stp_process_packet(VOID)
 	}
 	/*sequence not match && previous packet enqueue successfully, send the previous ACK */
 	else if (fgRxOk == 0) {
-		STP_ERR_FUNC("mtkstp_process_packet: expected_rxseq = %d, parser.seq = %d\n",
-				stp_core_ctx.sequence.expected_rxseq, stp_core_ctx.parser.seq);
-		stp_process_packet_fail_count++;
+		STP_ERR_FUNC("mtkstp_process_packet: expected_rxseq = %d, parser.seq = %d, rx_resync = %d\n",
+				stp_core_ctx.sequence.expected_rxseq,
+				stp_core_ctx.parser.seq,
+				stp_core_ctx.sequence.rx_resync);
 
 		stp_ctx_lock(&stp_core_ctx);
 		/* osal_lock_unsleepable_lock(&stp_core_ctx.stp_mutex); */
@@ -1399,9 +1406,26 @@ static VOID stp_process_packet(VOID)
 		stp_send_ack(txAck, 1);
 		stp_ctx_unlock(&stp_core_ctx);
 		/* osal_unlock_unsleepable_lock(&stp_core_ctx.stp_mutex); */
-		STP_ERR_FUNC
-			("seq not match && previous packet enqueue success, send the previous (ack no =%d)\n",
-				txAck);
+
+		if (stp_core_ctx.sequence.rx_resync) {
+			STP_ERR_FUNC("resync'd packets, discard and send the previous (ack no =%d)\n", txAck);
+			if (stp_core_ctx.sequence.rx_resync_seq == 0xFF)
+				stp_core_ctx.sequence.rx_resync_seq = stp_core_ctx.parser.seq;
+			else {
+				INDEX_INC(stp_core_ctx.sequence.rx_resync_seq);
+				if (stp_core_ctx.sequence.rx_resync_seq != stp_core_ctx.parser.seq) {
+					STP_ERR_FUNC("resync'd packet seq not match, %d expected\n",
+						stp_core_ctx.sequence.rx_resync_seq);
+					stp_process_packet_fail_count++;
+					stp_core_ctx.sequence.rx_resync = 0;
+				}
+			}
+		} else {
+			stp_process_packet_fail_count++;
+			STP_ERR_FUNC
+				("seq not match && previous packet enqueue success, send the previous (ack no =%d)\n",
+					txAck);
+		}
 	}
 	/*sequence not match && previous packet enqueue failed, do nothing, make the other side timeout */
 	else {
@@ -2026,9 +2050,12 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 				stp_change_rx_state(MTKSTP_RESYNC1);
 			break;
 		case MTKSTP_RESYNC4:
-			if (*p_data == 0x7f)
+			if (*p_data == 0x7f) {
 				stp_change_rx_state(MTKSTP_SYNC);
-			else
+				if (stp_core_ctx.sequence.rx_resync < 0xFF)
+					stp_core_ctx.sequence.rx_resync++;
+				stp_core_ctx.sequence.rx_resync_seq = 0xFF;
+			} else
 				stp_change_rx_state(MTKSTP_RESYNC1);
 			break;
 		case MTKSTP_SYNC:	/* b'10 */

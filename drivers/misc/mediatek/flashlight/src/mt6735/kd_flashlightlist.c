@@ -85,6 +85,58 @@ static FLASHLIGHT_FUNCTION_STRUCT
 static int gLowBatDuty[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
 static int g_strobePartId[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
 
+// [SM31][Camera][akenhsu] Add Flash LED IC: lm3648tt 20160922 BEGIN
+extern ssize_t lm3648tt_rt_on_show (struct device *dev, struct device_attribute *attr, char *buf);
+extern ssize_t lm3648tt_rt_off_show (struct device *dev, struct device_attribute *attr, char *buf);
+extern ssize_t lm3648tt_ft_on_show (struct device *dev, struct device_attribute *attr, char *buf);
+
+extern ssize_t lm3648tt_addr_save(struct device *dev,struct device_attribute *attr, const char *buf, size_t count);
+extern ssize_t lm3648tt_addr_show(struct device *dev, struct device_attribute *attr, char *buf);
+extern ssize_t lm3648tt_data_save(struct device *dev,struct device_attribute *attr, const char *buf, size_t count);
+extern ssize_t lm3648tt_data_show(struct device *dev, struct device_attribute *attr, char *buf);
+
+extern ssize_t lm3648tt_t1_save(struct device *dev,struct device_attribute *attr, const char *buf, size_t count);
+extern ssize_t lm3648tt_t1_show(struct device *dev, struct device_attribute *attr, char *buf);
+extern ssize_t lm3648tt_f1_save(struct device *dev,struct device_attribute *attr, const char *buf, size_t count);
+extern ssize_t lm3648tt_f1_show(struct device *dev, struct device_attribute *attr, char *buf);
+
+static DEVICE_ATTR(rt_on, 0664, lm3648tt_rt_on_show, NULL);
+static DEVICE_ATTR(rt_off, 0664, lm3648tt_rt_off_show, NULL);
+static DEVICE_ATTR(rf_on, 0664, lm3648tt_ft_on_show, NULL);
+
+static DEVICE_ATTR(addr, 0664, lm3648tt_addr_show, lm3648tt_addr_save);
+static DEVICE_ATTR(data, 0664, lm3648tt_data_show, lm3648tt_data_save);
+
+static DEVICE_ATTR(t1, 0664, lm3648tt_t1_show, lm3648tt_t1_save);
+static DEVICE_ATTR(f1, 0664, lm3648tt_f1_show, lm3648tt_f1_save);
+
+static struct device_attribute *flashlight_class_attrs[] = {
+	&dev_attr_rt_on,
+	&dev_attr_rt_off,
+	&dev_attr_rf_on,
+
+	&dev_attr_addr,
+	&dev_attr_data,
+
+	&dev_attr_t1,
+	&dev_attr_f1,
+};
+
+static ssize_t flashlight_create_attr (struct device *dev)
+{
+        int i = 0, ret = 0;
+        int num = sizeof (flashlight_class_attrs) / sizeof (flashlight_class_attrs[0]);
+
+        if (!dev) return -EINVAL;
+
+        logI ("flashlight_create_attr, num = %d\n", num);
+
+        for (i = 0; i < num; i++) if ((ret = device_create_file(dev, flashlight_class_attrs[i]))) break;
+
+        return ret;
+}
+// [SM31][Camera][akenhsu] 20160922 END
+
 /* ============================== */
 /* functions */
 /* ============================== */
@@ -291,6 +343,8 @@ static int decFlash(void)
 	return 0;
 }
 */
+//[SM31][Camera] Fix Camera can not capture with flash in -20 degree Person Liu 20170117 S
+#if 0
 static int closeFlash(void)
 {
 	int i;
@@ -314,7 +368,8 @@ static int closeFlash(void)
 	}
 	return 0;
 }
-
+#endif
+//[SM31][Camera] Fix Camera can not capture with flash in -20 degree Person Liu 20170117 E
 /* @@{ */
 
 /*
@@ -327,7 +382,8 @@ static int closeFlash(void)
 
 /* /}@@ */
 static int gLowPowerVbat = LOW_BATTERY_LEVEL_0;
-
+//[SM31][Camera] Fix Camera can not capture with flash in -20 degree Person Liu 20170117 S
+#if 0
 static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 {
 	logI("Lbat_protection_powerlimit_flash %d (%d %d %d %d)\n", level, LOW_BATTERY_LEVEL_0,
@@ -347,11 +403,12 @@ static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 		/* unlimit cpu and gpu */
 	}
 }
-
-
+#endif
+//[SM31][Camera] Fix Camera can not capture with flash in -20 degree Person Liu 20170117 E
 
 static int gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
-
+//[SM31][Camera] Fix Camera can not capture with flash in -20 degree Person Liu 20170117 S
+#if 0
 static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level)
 {
 	logI("bat_per_protection_powerlimit_flashlight %d (%d %d %d)\n", level,
@@ -369,8 +426,8 @@ static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level
 
 	}
 }
-
-
+#endif
+//[SM31][Camera] Fix Camera can not capture with flash in -20 degree Person Liu 20170117 E
 /*
 static int gLowPowerOc=BATTERY_OC_LEVEL_0;
 
@@ -716,6 +773,10 @@ static int flashlight_probe(struct platform_device *dev)
 		goto flashlight_probe_error;
 	}
 
+// [SM31][Camera][akenhsu] Add Flash LED IC: lm3648tt 20160922 BEGIN
+	flashlight_create_attr (flashlight_device);
+// [SM31][Camera][akenhsu] 20160922 END
+
 	/* initialize members */
 	spin_lock_init(&flashlight_private.lock);
 	init_waitqueue_head(&flashlight_private.read_wait);
@@ -798,10 +859,11 @@ static int __init flashlight_init(void)
 		logI("[flashlight_probe] platform_driver_register fail ~");
 		return ret;
 	}
-
-	register_low_battery_notify(&Lbat_protection_powerlimit_flash, LOW_BATTERY_PRIO_FLASHLIGHT);
-	register_battery_percent_notify(&bat_per_protection_powerlimit_flashlight,
-					BATTERY_PERCENT_PRIO_FLASHLIGHT);
+//[SM31][Camera] Fix Camera can not capture with flash in -20 degree Person Liu 20170117 S
+//	register_low_battery_notify(&Lbat_protection_powerlimit_flash, LOW_BATTERY_PRIO_FLASHLIGHT);
+//	register_battery_percent_notify(&bat_per_protection_powerlimit_flashlight,
+//					BATTERY_PERCENT_PRIO_FLASHLIGHT);
+//[SM31][Camera] Fix Camera can not capture with flash in -20 degree Person Liu 20170117 E
 /* @@    register_battery_oc_notify(&bat_oc_protection_powerlimit, BATTERY_OC_PRIO_FLASHLIGHT); */
 
 	logI("[flashlight_probe] done! ~");

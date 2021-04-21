@@ -979,28 +979,42 @@ saaSendDisconnectMsgHandler(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec
 static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec,
 				IN P_BSS_INFO_T prAisBssInfo, IN ENUM_AA_FRM_TYPE_T eFrmType)
 {
-	OS_SYSTIME rCurrentTime;
-	P_CONNECTION_SETTINGS_T prConnSettings;
+    OS_SYSTIME rCurrentTime;
+    P_CONNECTION_SETTINGS_T prConnSettings;
+    P_AIS_FSM_INFO_T prAisFsmInfo;
+    ENUM_AA_STATE_T eNextState;
 
-	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
-	GET_CURRENT_SYSTIME(&rCurrentTime);
+    prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+    prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+    GET_CURRENT_SYSTIME(&rCurrentTime);
 
-	/*
-		TODO: maybe AP is in DFS channel, it wants to switch channels?
-		Wait for beacon timeout?
-		Need to do partial scan for the AP channel.
-	*/
+    /*
+        TODO: maybe AP is in DFS channel, it wants to switch channels?
+        Wait for beacon timeout?
+        Need to do partial scan for the AP channel.
+    */
 
-	if (!CHECK_FOR_TIMEOUT(rCurrentTime, prAisBssInfo->rConnTime,
-				  SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL)) &&
-		/* maybe some packets are queued in HW, we will get many de-auth */
-		(prAisBssInfo->fgDisConnReassoc == FALSE)) {
-		DBGLOG(SAA, INFO, "<drv> AP deauth ok 0x%x %x %x rcpi:%d\n",
-			rCurrentTime, prAisBssInfo->rConnTime, SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL),
-			dBm_TO_RCPI(prAdapter->rLinkQuality.cRssi));
-		saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, eFrmType);
-	} else {
+    if ((prAisFsmInfo->eCurrentState == AIS_STATE_JOIN) &&
+        (prAisBssInfo->eConnectionStateIndicated == PARAM_MEDIA_STATE_DISCONNECTED)) {
+        prStaRec->u2StatusCode = STATUS_CODE_ASSOC_TIMEOUT;
+        eNextState = AA_STATE_IDLE;
+        saaFsmSteps(prAdapter, prStaRec, eNextState, NULL);
+        
+    } else if (!CHECK_FOR_TIMEOUT(rCurrentTime, prAisBssInfo->rConnTime,
+                 SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL)) &&
+        /* maybe some packets are queued in HW, we will get many de-auth */
+        (prAisBssInfo->fgDisConnReassoc == FALSE)) {
+        DBGLOG(SAA, INFO, "<drv> AP deauth ok 0x%x %x %x rcpi:%d\n",
+            rCurrentTime, prAisBssInfo->rConnTime, SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL),
+            dBm_TO_RCPI(prAdapter->rLinkQuality.cRssi));
+        saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, eFrmType);
+    } else {
 		DBGLOG(SAA, INFO, "<drv> reassociate\n");
+		/* Report a lowest RSSI value to wlan framework, who will transfer it to modem and then
+		** modem can make a decision if need to switch to LTE data link.
+		*/
+		mtk_cfg80211_vendor_event_rssi_beyond_range(priv_to_wiphy(prAdapter->prGlueInfo),
+					prAdapter->prGlueInfo->prDevHandler->ieee80211_ptr, -127);
 
 		if (prAisBssInfo->fgDisConnReassoc == FALSE) {
 			P_BSS_DESC_T prBssDesc;

@@ -24,10 +24,12 @@
 /*#define HW_FG_FORCE_USE_SW_OCV*/
 /*#define SOC_BY_SW_FG*/
 
-/*
+/*[Arima_8100][bozhi_lin] enable battery tempperature adc mapping table 20161004 begin*/
+/*[Arima_8100][bozhi_lin] temporarily disable battery check thermal 20160921 begin*/
 //#define CONFIG_DIS_CHECK_BATTERY
 //#define FIXED_TBAT_25
-*/
+/*[Arima_8100][bozhi_lin] 20160921 end*/
+/*[Arima_8100][bozhi_lin] 20161004 end*/
 
 #if defined(CONFIG_MTK_BQ24196_SUPPORT) \
 	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
@@ -51,6 +53,18 @@
 #define FG_METER_RESISTANCE 0
 
 /* Qmax for battery  */
+/*[Arima_8100][bozhi_lin] apply battery zcv table from hw 20161004 begin*/
+#if 1
+#define Q_MAX_POS_50 2704
+#define Q_MAX_POS_25 2663
+#define Q_MAX_POS_0 2565
+#define Q_MAX_NEG_10 2438
+
+#define Q_MAX_POS_50_H_CURRENT 2687
+#define Q_MAX_POS_25_H_CURRENT 2637
+#define Q_MAX_POS_0_H_CURRENT 2184
+#define Q_MAX_NEG_10_H_CURRENT 1725
+#else
 #define Q_MAX_POS_50 1463
 #define Q_MAX_POS_25 1437
 #define Q_MAX_POS_0 1220
@@ -60,6 +74,8 @@
 #define Q_MAX_POS_25_H_CURRENT 1462
 #define Q_MAX_POS_0_H_CURRENT 818
 #define Q_MAX_NEG_10_H_CURRENT 149
+#endif
+/*[Arima_8100][bozhi_lin] 20161004 end*/
 
 
 /* Discharge Percentage */
@@ -81,7 +97,13 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
+/*[Arima_8100][bozhi_lin] set charging CAR_TUNE_VALUE to 102 based on hw test 20161113 begin*/
+#if 1
+#define CAR_TUNE_VALUE 102
+#else
 #define CAR_TUNE_VALUE 100 /*1.00*/
+#endif
+/*[Arima_8100][bozhi_lin] 20161113 end*/
 
 
 /* HW Fuel gague  */
@@ -99,11 +121,26 @@
 #define DIFFERENCE_VOLTAGE_UPDATE	20
 #define AGING1_LOAD_SOC			70
 #define AGING1_UPDATE_SOC		30
+/*[Arima_8100][bozhi_lin] fine tune charging algorithm 20170124 begin*/
+/*[Arima_8100][bozhi_lin] fine tune charging algorithm 20161213 begin*/
+#if 1
+#define BATTERYPSEUDO100		98
+#define BATTERYPSEUDO1			2
+#else
 #define BATTERYPSEUDO100		95
 #define BATTERYPSEUDO1			4
+#endif
+/*[Arima_8100][bozhi_lin] 20161213 end*/
+/*[Arima_8100][bozhi_lin] 20170124 end*/
 
 /* #define Q_MAX_BY_SYS */
+/*[Arima_8100][bozhi_lin] fine tune charging algorithm 20161213 begin*/
+#if 1
+#define Q_MAX_SYS_VOLTAGE		3350
+#else
 #define Q_MAX_SYS_VOLTAGE		3300
+#endif
+/*[Arima_8100][bozhi_lin] 20161213 end*/
 #define SHUTDOWN_GAUGE0
 #define SHUTDOWN_GAUGE1_XMINS
 #define SHUTDOWN_GAUGE1_MINS		60
@@ -149,6 +186,10 @@
 */
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC
+
+/*[Arima_8100][bozhi_lin] multi-id battery support implement 20161115 begin*/
+#define MTK_MULTI_BAT_PROFILE_SUPPORT
+/*[Arima_8100][bozhi_lin] 20161115 end*/
 
 #elif defined(CONFIG_ARCH_MT6735M)
 /* ============================================================

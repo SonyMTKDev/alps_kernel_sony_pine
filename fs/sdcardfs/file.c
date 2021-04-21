@@ -110,9 +110,9 @@ static long sdcardfs_unlocked_ioctl(struct file *file, unsigned int cmd,
 	/* XXX: use vfs_ioctl if/when VFS exports it */
 	if (!lower_file || !lower_file->f_op)
 		goto out;
+
 	if (lower_file->f_op->unlocked_ioctl)
 		err = lower_file->f_op->unlocked_ioctl(lower_file, cmd, arg);
-
 out:
 	return err;
 }
@@ -129,9 +129,9 @@ static long sdcardfs_compat_ioctl(struct file *file, unsigned int cmd,
 	/* XXX: use vfs_ioctl if/when VFS exports it */
 	if (!lower_file || !lower_file->f_op)
 		goto out;
+
 	if (lower_file->f_op->compat_ioctl)
 		err = lower_file->f_op->compat_ioctl(lower_file, cmd, arg);
-
 out:
 	return err;
 }
@@ -177,12 +177,6 @@ static int sdcardfs_mmap(struct file *file, struct vm_area_struct *vma)
 			goto out;
 		}
 		saved_vm_ops = vma->vm_ops; /* save: came from lower ->mmap */
-		err = do_munmap(current->mm, vma->vm_start,
-				vma->vm_end - vma->vm_start);
-		if (err) {
-			printk(KERN_ERR "sdcardfs: do_munmap failed %d\n", err);
-			goto out;
-		}
 	}
 
 	/*
@@ -195,6 +189,9 @@ static int sdcardfs_mmap(struct file *file, struct vm_area_struct *vma)
 	file->f_mapping->a_ops = &sdcardfs_aops; /* set our aops */
 	if (!SDCARDFS_F(file)->lower_vm_ops) /* save for our ->fault */
 		SDCARDFS_F(file)->lower_vm_ops = saved_vm_ops;
+	vma->vm_private_data = file;
+	get_file(lower_file);
+	vma->vm_file = lower_file;
 
 out:
 	return err;
@@ -225,7 +222,11 @@ static int sdcardfs_open(struct inode *inode, struct file *file)
 	}
 
 	/* save current_cred and override it */
-	OVERRIDE_CRED(sbi, saved_cred);
+	saved_cred = override_fsids(sbi);
+	if (!saved_cred) {
+		err = -ENOMEM;
+		goto out_err;
+	}
 
 	file->private_data =
 		kzalloc(sizeof(struct sdcardfs_file_info), GFP_KERNEL);
@@ -256,7 +257,7 @@ static int sdcardfs_open(struct inode *inode, struct file *file)
 	}
 
 out_revert_cred:
-	REVERT_CRED(saved_cred);
+	revert_fsids(saved_cred);
 out_err:
 	dput(parent);
 	return err;

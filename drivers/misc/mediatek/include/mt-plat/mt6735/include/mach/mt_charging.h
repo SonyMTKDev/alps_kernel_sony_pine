@@ -19,6 +19,14 @@
 #define TALKING_RECHARGE_VOLTAGE 3800
 #define TALKING_SYNC_TIME		   60
 
+/*[Arima_8100][bozhi_lin] FP22589: Battery Swelling mitigation for retail demo units 20161027 begin*/
+/* stop charging while in demo app */
+#if defined(CONFIG_STOP_CHARGING_IN_DEMOAPP)
+#define DEMOAPP_RECHARGE_SOC    40
+#define DEMOAPP_STOPCHARGE_SOC  60
+#endif
+/*[Arima_8100][bozhi_lin] 20161027 end*/
+
 /* Battery Temperature Protection */
 #define MTK_TEMPERATURE_RECHARGE_SUPPORT
 #define MAX_CHARGE_TEMPERATURE  50
@@ -28,7 +36,9 @@
 #define ERR_CHARGE_TEMPERATURE  0xFF
 
 /* Linear Charging Threshold */
-#define V_PRE2CC_THRES 3400
+/*[Arima_8100][bozhi_lin] RichTek rt9458 charging ic driver porting 20160921 begin*/
+#define V_PRE2CC_THRES 2400
+/*[Arima_8100][bozhi_lin] 20160921 end*/
 #define V_CC2TOPOFF_THRES		4050
 #define RECHARGING_VOLTAGE      4110
 #define CHARGING_FULL_CURRENT    100
@@ -71,19 +81,34 @@
 //#define BATTERY_NOTIFY_CASE_0005_TOTAL_CHARGINGTIME
 */
 /* High battery support */
-/*#define HIGH_BATTERY_VOLTAGE_SUPPORT*/
+/*[Arima_8100][bozhi_lin] RichTek rt9458 charging ic driver porting 20160921 begin*/
+#define HIGH_BATTERY_VOLTAGE_SUPPORT
+/*[Arima_8100][bozhi_lin] 20160921 end*/
 
 /* JEITA parameter */
 /*#define MTK_JEITA_STANDARD_SUPPORT*/
+/*[Arima_8100][bozhi_lin] Charging enable JEITA battery temperature check 20161028 begin*/
+#define JEITA_SONY_CONFIG
+/*[Arima_8100][bozhi_lin] 20161028 end*/
 #define CUST_SOC_JEITA_SYNC_TIME 30
 #define JEITA_RECHARGE_VOLTAGE  4110	/* for linear charging */
 #ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
+/*[Arima_8100][bozhi_lin] Charging enable JEITA battery temperature check 20161028 begin*/
+#if defined(JEITA_SONY_CONFIG)
+#define JEITA_TEMP_ABOVE_POS_55_CV_VOLTAGE		BATTERY_VOLT_04_200000_V
+#define JEITA_TEMP_POS_45_TO_POS_55_CV_VOLTAGE		BATTERY_VOLT_04_200000_V
+#define JEITA_TEMP_POS_10_TO_POS_45_CV_VOLTAGE		BATTERY_VOLT_04_350000_V
+#define JEITA_TEMP_POS_5_TO_POS_10_CV_VOLTAGE		BATTERY_VOLT_04_200000_V
+#define JEITA_TEMP_BELOW_POS_5_CV_VOLTAGE		BATTERY_VOLT_04_200000_V
+#else
 #define JEITA_TEMP_ABOVE_POS_60_CV_VOLTAGE		BATTERY_VOLT_04_240000_V
 #define JEITA_TEMP_POS_45_TO_POS_60_CV_VOLTAGE		BATTERY_VOLT_04_240000_V
 #define JEITA_TEMP_POS_10_TO_POS_45_CV_VOLTAGE		BATTERY_VOLT_04_340000_V
 #define JEITA_TEMP_POS_0_TO_POS_10_CV_VOLTAGE		BATTERY_VOLT_04_240000_V
 #define JEITA_TEMP_NEG_10_TO_POS_0_CV_VOLTAGE		BATTERY_VOLT_04_040000_V
 #define JEITA_TEMP_BELOW_NEG_10_CV_VOLTAGE		BATTERY_VOLT_04_040000_V
+#endif
+/*[Arima_8100][bozhi_lin] 20161028 end*/
 #else
 #define JEITA_TEMP_ABOVE_POS_60_CV_VOLTAGE		BATTERY_VOLT_04_100000_V
 #define JEITA_TEMP_POS_45_TO_POS_60_CV_VOLTAGE	BATTERY_VOLT_04_100000_V

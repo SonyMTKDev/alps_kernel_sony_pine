@@ -67,6 +67,8 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Cannot find camera pinctrl!");
 		ret = PTR_ERR(camctrl);
 	}
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu S
+#if 0
     /*Cam0 Power/Rst Ping initialization*/
 	cam0_pnd_h = pinctrl_lookup_state(camctrl, "cam0_pnd1");
 	if (IS_ERR(cam0_pnd_h)) {
@@ -80,7 +82,8 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		pr_debug("%s : pinctrl err, cam0_pnd_l\n", __func__);
 	}
 
-
+#endif
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu E
 	cam0_rst_h = pinctrl_lookup_state(camctrl, "cam0_rst1");
 	if (IS_ERR(cam0_rst_h)) {
 		ret = PTR_ERR(cam0_rst_h);
@@ -92,7 +95,8 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		ret = PTR_ERR(cam0_rst_l);
 		pr_debug("%s : pinctrl err, cam0_rst_l\n", __func__);
 	}
-
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu S
+#if 0
     /*Cam1 Power/Rst Ping initialization*/
 	cam1_pnd_h = pinctrl_lookup_state(camctrl, "cam1_pnd1");
 	if (IS_ERR(cam1_pnd_h)) {
@@ -106,7 +110,8 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		pr_debug("%s : pinctrl err, cam1_pnd_l\n", __func__);
 	}
 
-
+#endif
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu E
 	cam1_rst_h = pinctrl_lookup_state(camctrl, "cam1_rst1");
 	if (IS_ERR(cam1_rst_h)) {
 		ret = PTR_ERR(cam1_rst_h);
@@ -119,6 +124,8 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		ret = PTR_ERR(cam1_rst_l);
 		pr_debug("%s : pinctrl err, cam1_rst_l\n", __func__);
 	}
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu S	
+#if 0
 	/*externel LDO enable */
 	cam_ldo0_h = pinctrl_lookup_state(camctrl, "cam_ldo0_1");
 	if (IS_ERR(cam_ldo0_h)) {
@@ -132,6 +139,8 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		ret = PTR_ERR(cam_ldo0_l);
 		pr_debug("%s : pinctrl err, cam_ldo0_l\n", __func__);
 	}
+#endif
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu E
 	return ret;
 }
 
@@ -207,8 +216,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			CAMERA_CMRST_PIN_M_GPIO,   /* mode */
 			GPIO_OUT_ONE,              /* ON state */
 			GPIO_OUT_ZERO,             /* OFF state */
-			CAMERA_CMPDN_PIN,
-			CAMERA_CMPDN_PIN_M_GPIO,
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu S
+			GPIO_CAMERA_INVALID,//CAMERA_CMPDN_PIN,
+			GPIO_CAMERA_INVALID,//CAMERA_CMPDN_PIN_M_GPIO,
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu E
 			GPIO_OUT_ONE,
 			GPIO_OUT_ZERO,
 		},
@@ -218,8 +229,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			CAMERA_CMRST1_PIN_M_GPIO,
 			GPIO_OUT_ONE,
 			GPIO_OUT_ZERO,
-			CAMERA_CMPDN1_PIN,
-			CAMERA_CMPDN1_PIN_M_GPIO,
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu S
+			GPIO_CAMERA_INVALID,//CAMERA_CMPDN1_PIN,
+			GPIO_CAMERA_INVALID,//CAMERA_CMPDN1_PIN_M_GPIO,
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu E
 			GPIO_OUT_ONE,
 			GPIO_OUT_ZERO,
 		},
@@ -258,9 +271,12 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 #endif
 
 		PK_DBG("[PowerON]pinSetIdx:%d, currSensorName: %s\n", pinSetIdx, currSensorName);
-
-		if ((currSensorName && (0 == strcmp(currSensorName, "imx135mipiraw"))) ||
-		    (currSensorName && (0 == strcmp(currSensorName, "imx220mipiraw")))) {
+//[SM31][Camera] Add Main Camera Driver S5K3L8 Person Liu 20170317 S
+		if ((currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K3L8_MIPI_RAW, currSensorName))) ||
+				(currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K3L8S_MIPI_RAW, currSensorName))) ||
+				(currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K3L8S2_MIPI_RAW, currSensorName)))
+				) {
+//[SM31][Camera] Add Main Camera Driver S5K3L8 Person Liu 20170317 E
 			/* First Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
 				mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
@@ -284,7 +300,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 			mdelay(1);
 
-			if (TRUE != _hwPowerOn(VCAMD, VOL_1000)) {
+			if (TRUE != _hwPowerOn(VCAMD, VOL_1200)) {
 				PK_DBG("[CAMERA SENSOR] Fail to enable digital power (VCAM_D), power id = %d\n", VCAMD);
 				goto _kdCISModulePowerOn_exit_;
 			}
@@ -402,16 +418,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
 
 			mdelay(20);
-		} else  if (currSensorName && (0 == strcmp(SENSOR_DRVNAME_GC2355_MIPI_RAW, currSensorName))) {
-			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);
+		} else  if (currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW, currSensorName))) { // [SM31][Camera][akenhsu] Porting front camera img sensor: s5k5e2ya 20161004
+//			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu
 			/* First Power Pin low and Reset Pin Low */
-			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
-				mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
-
-			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST])
-				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
-
-			mdelay(50);
 
 			/* VCAM_A */
 			if (TRUE != _hwPowerOn(VCAMA, VOL_2800)) {
@@ -419,7 +428,32 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
+			/* VCAM_IO */
+			if (TRUE != _hwPowerOn(VCAMIO, VOL_1800)) {
+				PK_DBG("[CAMERA SENSOR] Fail to enable IO power (VCAM_IO),power id = %d\n", VCAMIO);
+				goto _kdCISModulePowerOn_exit_;
+			}
+
+			if (TRUE != _hwPowerOn(VCAMD, VOL_1200)) { // [SM31][Camera][akenhsu] Modify the voltage of VDDD from 1500mV to 1200mV 20161020
+				PK_DBG("[CAMERA SENSOR] Fail to enable digital power (VCAM_D),power id = %d\n", VCAMD);
+				goto _kdCISModulePowerOn_exit_;
+			}
+
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
+				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+				mdelay(5);
+				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
+			}
+// [SM31][Camera][akenhsu] Add 2nd source of Front Camera 20170214 BEGIN
+		} else  if (currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K5E2YB_MIPI_RAW, currSensorName))) { // [SM31][Camera][akenhsu] Porting front camera img sensor: s5k5e2ya 20161004
+//			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu
+			/* First Power Pin low and Reset Pin Low */
+
+			/* VCAM_A */
+			if (TRUE != _hwPowerOn(VCAMA, VOL_2800)) {
+				PK_DBG("[CAMERA SENSOR] Fail to enable analog power (VCAM_A),power id = %d\n", VCAMA);
+				goto _kdCISModulePowerOn_exit_;
+			}
 
 			/* VCAM_IO */
 			if (TRUE != _hwPowerOn(VCAMIO, VOL_1800)) {
@@ -427,38 +461,17 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
-
-			if (TRUE != _hwPowerOn(VCAMD, VOL_1500)) {
+			if (TRUE != _hwPowerOn(VCAMD, VOL_1200)) { // [SM31][Camera][akenhsu] Modify the voltage of VDDD from 1500mV to 1200mV 20161020
 				PK_DBG("[CAMERA SENSOR] Fail to enable digital power (VCAM_D),power id = %d\n", VCAMD);
 				goto _kdCISModulePowerOn_exit_;
 			}
-
-			mdelay(10);
-
-			/* AF_VCC */
-			if (TRUE != _hwPowerOn(VCAMAF, VOL_2800)) {
-				PK_DBG("[CAMERA SENSOR] Fail to enable analog power (VCAM_AF),power id = %d\n", VCAMAF);
-				goto _kdCISModulePowerOn_exit_;
-			}
-
-
-			mdelay(50);
 
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
 				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
 				mdelay(5);
 				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
 			}
-			mdelay(5);
-			/* enable active sensor */
-			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
-				mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
-				mdelay(5);
-				mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
-			}
-
-			mdelay(5);
+// [SM31][Camera][akenhsu] 20170214 END
 		} else {
 			/* First Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
@@ -524,11 +537,12 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			ISP_MCLK1_EN(0);
 		else if (pinSetIdx == 1)
 			ISP_MCLK2_EN(0);
-
-		if ((currSensorName && (0 == strcmp(currSensorName, "imx135mipiraw"))) ||
-		    (currSensorName && (0 == strcmp(currSensorName, "imx220mipiraw"))))
-
-		{
+//[SM31][Camera] Add Main Camera Driver S5K3L8 Person Liu 20170317 S
+		if ((currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K3L8_MIPI_RAW, currSensorName))) ||
+				(currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K3L8S_MIPI_RAW, currSensorName))) ||
+				(currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K3L8S2_MIPI_RAW, currSensorName)))				
+				) {
+//[SM31][Camera] Add Main Camera Driver S5K3L8 Person Liu 20170317 E
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
 				mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
@@ -565,7 +579,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 		} else if (currSensorName &&
 			(0 == strcmp(SENSOR_DRVNAME_OV5648_MIPI_RAW, currSensorName))) {
-			mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);
+//			mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
 				mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
@@ -600,11 +614,8 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 		} else if (currSensorName &&
-			(0 == strcmp(SENSOR_DRVNAME_GC2355_MIPI_RAW, currSensorName))) {
-			mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);
-			/* Set Power Pin low and Reset Pin Low */
-			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
-				mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
+			(0 == strcmp(SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW, currSensorName))) { // [SM31][Camera][akenhsu] Porting front camera img sensor: s5k5e2ya 20161004
+//			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu
 
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST])
 				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
@@ -627,14 +638,33 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				/* return -EIO; */
 				goto _kdCISModulePowerOn_exit_;
 			}
+// [SM31][Camera][akenhsu] Add 2nd source of Front Camera 20170214 BEGIN
+		} else if (currSensorName &&
+			(0 == strcmp(SENSOR_DRVNAME_S5K5E2YB_MIPI_RAW, currSensorName))) { // [SM31][Camera][akenhsu] Porting front camera img sensor: s5k5e2ya 20161004
+//			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu
 
-			/* AF_VCC */
-			if (TRUE != _hwPowerDown(VCAMAF)) {
-				PK_DBG("[CAMERA SENSOR] Fail to OFF AF power (VCAM_AF),power id = %d\n", VCAMAF);
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST])
+				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+
+			if (TRUE != _hwPowerDown(VCAMD)) {
+				PK_DBG("[CAMERA SENSOR] Fail to OFF core power (VCAM_D),power id = %d\n", VCAMD);
+				goto _kdCISModulePowerOn_exit_;
+			}
+
+			/* VCAM_A */
+			if (TRUE != _hwPowerDown(VCAMA)) {
+				PK_DBG("[CAMERA SENSOR] Fail to OFF analog power (VCAM_A),power id= (%d)\n", VCAMA);
 				/* return -EIO; */
 				goto _kdCISModulePowerOn_exit_;
 			}
 
+			/* VCAM_IO */
+			if (TRUE != _hwPowerDown(VCAMIO)) {
+				PK_DBG("[CAMERA SENSOR] Fail to OFF digital power (VCAM_IO),power id = %d\n", VCAMIO);
+				/* return -EIO; */
+				goto _kdCISModulePowerOn_exit_;
+			}
+// [SM31][Camera][akenhsu] 20170214 END
 		} else {
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
@@ -678,13 +708,11 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 _kdCISModulePowerOn_exit_:
 	return -EIO;
-
 }
 #else
 /*Legacy define*/
 int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSensorName, BOOL On, char *mode_name)
 {
-
 	u32 pinSetIdx = 0;/*default main sensor*/
 
 #define IDX_PS_CMRST 0
@@ -702,8 +730,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			CAMERA_CMRST_PIN_M_GPIO,   /* mode */
 			GPIO_OUT_ONE,              /* ON state */
 			GPIO_OUT_ZERO,             /* OFF state */
-			CAMERA_CMPDN_PIN,
-			CAMERA_CMPDN_PIN_M_GPIO,
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu S
+			GPIO_CAMERA_INVALID,//CAMERA_CMPDN_PIN,
+			GPIO_CAMERA_INVALID,//CAMERA_CMPDN_PIN_M_GPIO,
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu E
 			GPIO_OUT_ONE,
 			GPIO_OUT_ZERO,
 		},
@@ -713,8 +743,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			CAMERA_CMRST1_PIN_M_GPIO,
 			GPIO_OUT_ONE,
 			GPIO_OUT_ZERO,
-			CAMERA_CMPDN1_PIN,
-			CAMERA_CMPDN1_PIN_M_GPIO,
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu S
+			GPIO_CAMERA_INVALID,//CAMERA_CMPDN1_PIN,
+			GPIO_CAMERA_INVALID,//CAMERA_CMPDN1_PIN_M_GPIO,
+//[SM31][Camera] Remove unuse pin ctrl	20160928 Personliu E
 			GPIO_OUT_ONE,
 			GPIO_OUT_ZERO,
 		},
@@ -756,9 +788,11 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 #endif
 
 		PK_DBG("[PowerON]pinSetIdx:%d, currSensorName: %s\n", pinSetIdx, currSensorName);
-
-		if ((currSensorName && (0 == strcmp(currSensorName, "imx135mipiraw"))) ||
-		    (currSensorName && (0 == strcmp(currSensorName, "imx220mipiraw")))) {
+//[SM31][Camera] Add Main Camera Driver S5K3L8 Person Liu 20170214 S
+		if ((currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K3L8_MIPI_RAW, currSensorName))) ||
+				(currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K3L8S_MIPI_RAW, currSensorName)))
+				) {
+//[SM31][Camera] Add Main Camera Driver S5K3L8 Person Liu 20170214 E
 			/* First Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
 				if (mt_set_gpio_mode(pinSet[pinSetIdx][IDX_PS_CMPDN],
@@ -801,7 +835,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 			mdelay(1);
 
-			if (TRUE != hwPowerOn(CAMERA_POWER_VCAM_D, VOL_1000, mode_name)) {
+			if (TRUE != hwPowerOn(CAMERA_POWER_VCAM_D, VOL_1200, mode_name)) {
 				PK_DBG("[CAMERA SENSOR] Fail to enable digital power (VCAM_D),power id = %d\n",
 					CAMERA_POWER_VCAM_D);
 				goto _kdCISModulePowerOn_exit_;
@@ -932,7 +966,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 			mdelay(20);
-		} else  if (currSensorName && (0 == strcmp(SENSOR_DRVNAME_GC2355_MIPI_RAW, currSensorName))) {
+		} else  if (currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW, currSensorName))) { // [SM31][Camera][akenhsu] Porting front camera img sensor: s5k5e2ya 20161004
 			mt_set_gpio_mode(GPIO_SPI_MOSI_PIN, GPIO_MODE_00);
 			mt_set_gpio_dir(GPIO_SPI_MOSI_PIN, GPIO_DIR_OUT);
 			mt_set_gpio_out(GPIO_SPI_MOSI_PIN, GPIO_OUT_ONE);
@@ -1125,9 +1159,11 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			ISP_MCLK1_EN(0);
 		else if (pinSetIdx == 1)
 			ISP_MCLK2_EN(0);
-
-		if ((currSensorName && (0 == strcmp(currSensorName, "imx135mipiraw"))) ||
-		    (currSensorName && (0 == strcmp(currSensorName, "imx220mipiraw")))) {
+//[SM31][Camera] Add Main Camera Driver S5K3L8 Person Liu 20170214 S
+		if ((currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K3L8_MIPI_RAW, currSensorName))) ||
+				(currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K3L8S_MIPI_RAW, currSensorName)))
+				) {
+//[SM31][Camera] Add Main Camera Driver S5K3L8 Person Liu 20170214 E
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
 				if (mt_set_gpio_mode(pinSet[pinSetIdx][IDX_PS_CMPDN],
@@ -1239,7 +1275,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-		} else if (currSensorName && (0 == strcmp(SENSOR_DRVNAME_GC2355_MIPI_RAW, currSensorName))) {
+		} else if (currSensorName && (0 == strcmp(SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW, currSensorName))) { // [SM31][Camera][akenhsu] Porting front camera img sensor: s5k5e2ya 20161004
 			mt_set_gpio_out(GPIO_SPI_MOSI_PIN, GPIO_OUT_ZERO);
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {

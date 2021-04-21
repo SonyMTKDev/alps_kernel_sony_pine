@@ -1269,8 +1269,7 @@ finished:
 		sprintf(string, "USB20_HOST, RXQ<%d> ERR, CSR:%x", epnum, val);
 		QMU_ERR("%s\n", string);
 #ifdef CONFIG_MEDIATEK_SOLUTION
-		/* aee_kernel_warning(string, string); */
-		QMU_ERR("SKIP aee_kernel_warning\n");
+		aee_kernel_warning(string, string);
 #endif
 	}
 }
@@ -1373,8 +1372,7 @@ finished:
 		sprintf(string, "USB20_HOST, TXQ<%d> ERR, CSR:%x", epnum, val);
 		QMU_ERR("%s\n", string);
 #ifdef CONFIG_MEDIATEK_SOLUTION
-		/* aee_kernel_warning(string, string); */
-		QMU_ERR("SKIP aee_kernel_warning\n");
+		aee_kernel_warning(string, string);
 #endif
 	}
 

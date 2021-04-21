@@ -43,6 +43,12 @@
 #define TPD_DEBUG(arg...)
 #endif
 
+/*[Arima_8100][bozhi_lin] store touch vendor and firmware version to tpd_show_vendor_firmware 20161011 begin*/
+/*[Arima_8100][bozhi_lin] FocalTech ft3427 touch driver porting 20160920 begin*/
+#define TPD_REPORT_VENDOR_FW 
+/*[Arima_8100][bozhi_lin] 20160920 end*/
+/*[Arima_8100][bozhi_lin] 20161011 end*/
+
 /* register, address, configurations */
 #define TPD_DEVICE            "mtk-tpd"
 #define TPD_X                  0

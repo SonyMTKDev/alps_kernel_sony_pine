@@ -31,3 +31,7 @@ source "drivers/misc/mediatek/magnetometer/yamaha532-new/Kconfig"
 source "drivers/misc/mediatek/magnetometer/bmc156_mag/Kconfig"
 source "drivers/misc/mediatek/magnetometer/st480/Kconfig"
 source "drivers/misc/mediatek/magnetometer/maghub/Kconfig"
+#[SM31][Sensors][JasonHsing] M-sensor memsic3630 driver porting 20161004
+source "drivers/misc/mediatek/magnetometer/mmc3630kj/Kconfig"
+#[SM31][Sensors][JasonHsing] M-sensor akm09918 driver porting 20161201
+source "drivers/misc/mediatek/magnetometer/akm09918-new/Kconfig"

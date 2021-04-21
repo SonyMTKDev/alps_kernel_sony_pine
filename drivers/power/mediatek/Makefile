@@ -17,6 +17,12 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
+# [Arima_8100][bozhi_lin] only user build can enable 100 hours usb charging timer 20161222 begin
+ifeq ($(strip $(TARGET_BUILD_VARIANT)),user)
+        subdir-ccflags-y += -DUSER_BUILD
+endif
+# [Arima_8100][bozhi_lin] 20161222 end
+
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT) += mtk_pep_intf.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT) += mtk_pep20_intf.o
 
@@ -74,7 +80,13 @@ else
 														ifeq ($(CONFIG_MTK_RT9466_SUPPORT),y)
 															obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
 														else
-															obj-$(CONFIG_MTK_SMART_BATTERY) += linear_charging.o
+# [Arima_8100][bozhi_lin] RichTek rt9458 charging ic driver porting 20160921 begin
+															ifeq ($(CONFIG_MTK_RT9458_SUPPORT),y)
+																obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
+															else
+																obj-$(CONFIG_MTK_SMART_BATTERY) += linear_charging.o
+															endif
+# [Arima_8100][bozhi_lin] 20160921 end
 														endif
 													endif
 												endif

@@ -5838,8 +5838,6 @@ static unsigned int dev_char_poll(struct file *fp,
 	/*TODO: lack of poll wait for Tx */
 	if (!list_empty(&port->sdio_buf_in_list))
 		mask |= POLLIN | POLLRDNORM;
-	if (check_port(port) < 0)
-		mask |= POLLERR;
 
 	/*pr_debug("[C2K] poll done on %d, mask=%x\n", port->index, mask); */
 

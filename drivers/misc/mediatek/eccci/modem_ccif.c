@@ -54,6 +54,10 @@
 #include <mt-plat/mtk_rtc.h>
 #endif
 
+//by major, for apsbp config  
+#include <linux/bootapsbp.h>
+
+
 #define TAG "cif"
 
 #define BOOT_TIMER_ON 10
@@ -821,9 +825,11 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md)
 	char str[16];
 	unsigned int random_seed = 0, tmp;
 	char md_logger_cfg_file[32];
+    int send_sbp_flag = 0;  //by major
+	unsigned int sbp_code = md->sbp_code;
 
 	snprintf(str, sizeof(str), "%s", AP_PLATFORM_INFO);
-
+          CCCI_INF_MSG(md->index, TAG, "md_ccif_op_send_runtime_data\n");    //by major, for test
 	ccci_h = (struct ccci_header *)&md_ctrl->ccif_sram_layout->up_header;
 	runtime = (struct modem_runtime *)&md_ctrl->ccif_sram_layout->runtime_data;
 
@@ -891,6 +897,33 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md)
 	tmp |= (FEATURE_SUPPORT << (MISC_RAND_SEED * 2));
 	ccif_write32(&runtime->support_mask, 0, tmp);
 
+	//by major, fix issue about sbp nvram config not update after userdata is cleared
+        {
+			
+		{  //sbp not setted, then to get it from proc
+			unsigned int apsbp_id = mdbootreadsbp();  //return > 1000, means not setted, in fact it is 0xFFFF FFFF
+			
+			CCCI_INF_MSG(md->index, TAG, "[ccif]md=%d, apsbp_id=%u got.  sbp_code=%u\n", md->index , apsbp_id,sbp_code);
+			
+			if(apsbp_id < 1000)  //it is setted
+			{
+			      CCCI_INF_MSG(md->index, TAG, "CDF sbp  got!!\n");
+			      send_sbp_flag = 1;
+
+			      if(sbp_code != apsbp_id)
+			      {
+			           sbp_code = apsbp_id;
+					   md->sbp_code = sbp_code;  //update value...
+			           CCCI_ERR_MSG(md->index, TAG, "sbp  changed...sbp_code:%u\n" , apsbp_id);
+			      }
+			}
+			else
+			{
+			     CCCI_INF_MSG(md->index, TAG, "CDF sbp  NOT setted!!\n");
+			}
+
+		}
+	}
 	/* MD2 SBP code */
 	ccif_write32(&runtime->feature_4_val[0], 0, md->sbp_code);
 	ccif_write32(&runtime->feature_4_val[1], 0, 0); /*reserve for wm_id*/

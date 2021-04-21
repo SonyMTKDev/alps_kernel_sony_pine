@@ -21,9 +21,6 @@
 #include <linux/spinlock.h>
 #include <linux/seq_file.h>
 #endif
-#ifdef CONFIG_MTPROF
-#include <linux/sched.h>
-#endif
 
 #include "smpboot.h"
 #include "mt-plat/mt_devinfo.h"
@@ -218,31 +215,6 @@ void generic_smp_call_function_single_interrupt(void)
 	flush_smp_call_function_queue(true);
 }
 
-#ifdef CONFIG_MTPROF
-static void mt_record_smp_call_func_start(struct call_single_data *csd)
-{
-	if (unlikely(!csd))
-		return;
-
-	csd->start_ts = sched_clock();
-}
-
-static void mt_record_smp_call_func_end(struct call_single_data *csd)
-{
-#define WARN_LONG_CALL_FUNC_TIME	3000000
-	unsigned long long duration;
-
-	if (unlikely(!csd))
-		return;
-
-	csd->end_ts = sched_clock();
-	duration = csd->end_ts - csd->start_ts;
-
-	if (duration > WARN_LONG_CALL_FUNC_TIME)
-		pr_warn("func:%pF: too long: %llu ns\n", csd->func, duration);
-}
-#endif /* end of CONFIG_MTPROF */
-
 /**
  * flush_smp_call_function_queue - Flush pending smp-call-function callbacks
  *
@@ -286,13 +258,7 @@ static void flush_smp_call_function_queue(bool warn_cpu_offline)
 	}
 
 	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
-#ifdef CONFIG_MTPROF
-		mt_record_smp_call_func_start(csd);
-#endif
 		csd->func(csd->info);
-#ifdef CONFIG_MTPROF
-		mt_record_smp_call_func_end(csd);
-#endif
 		csd_unlock(csd);
 	}
 

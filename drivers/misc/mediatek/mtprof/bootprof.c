@@ -23,6 +23,7 @@
 #include <log_store_kernel.h>
 
 #include "internal.h"
+#include <mt_cpufreq.h>
 
 #define BOOT_STR_SIZE 256
 #define BUF_COUNT 12
@@ -167,6 +168,9 @@ static void bootup_finish(void)
 	mt_sched_monitor_switch(1);
 #endif
 	set_logtoomuch_enable(1);
+#if 1
+	mt_cpufreq_set_min_freq(MT_CPU_DVFS_LITTLE, 0);
+#endif
 }
 
 /* extern void (*set_intact_mode)(void); */

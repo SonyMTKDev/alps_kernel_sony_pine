@@ -12,5 +12,10 @@
 #
 
 #obj-$(CONFIG_NFC_MT6605)   += mt6605.o
-obj-y   += mt6605.o
+# [NFC][Kent][16090701][begin] Proting NFC PN553 
+#obj-y   += mt6605.o disable mtk NFC
+# [NFC][Kent][16090701][end] Proting NFC PN553 
 ccflags-$(CONFIG_NFC_MT6605) +=  -DDEBUG
+# [NFC][Kent][16090701][begin] Proting NFC PN553 
+obj-$(CONFIG_PN553_NFC)    += pn553.o  
+# [NFC][Kent][16090701][end] Proting NFC PN553 

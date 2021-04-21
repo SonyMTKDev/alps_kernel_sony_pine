@@ -52,7 +52,13 @@ EXPORT_SYMBOL(tpd_dts_data);
 
 struct pinctrl *pinctrl1;
 struct pinctrl_state *pins_default;
+/*[Arima_8100][bozhi_lin] fine tune touch power-on sequency 20161101 begin*/
+#if 1
+struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *rst_output1, *eint_input1;
+#else
 struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *rst_output1;
+#endif
+/*[Arima_8100][bozhi_lin] 20161101 end*/
 struct of_device_id touch_of_match[] = {
 	{ .compatible = "mediatek,mt6570-touch", },
 	{ .compatible = "mediatek,mt6735-touch", },
@@ -119,8 +125,12 @@ void tpd_gpio_as_int(int pin)
 {
 	mutex_lock(&tpd_set_gpio_mutex);
 	TPD_DEBUG("[tpd]tpd_gpio_as_int\n");
-	if (pin == 1)
+	if (pin == 1) {
 		pinctrl_select_state(pinctrl1, eint_as_int);
+/*[Arima_8100][bozhi_lin] fine tune touch power-on sequency 20161101 begin*/
+		pinctrl_select_state(pinctrl1, eint_input1);
+/*[Arima_8100][bozhi_lin] 20161101 end*/
+	}
 	mutex_unlock(&tpd_set_gpio_mutex);
 }
 EXPORT_SYMBOL(tpd_gpio_as_int);
@@ -190,6 +200,14 @@ int tpd_get_gpio_info(struct platform_device *pdev)
 		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_rst_output1!\n");
 		return ret;
 	}
+/*[Arima_8100][bozhi_lin] fine tune touch power-on sequency 20161101 begin*/
+	eint_input1 = pinctrl_lookup_state(pinctrl1, "state_eint_input1");
+	if (IS_ERR(eint_input1)) {
+		ret = PTR_ERR(eint_input1);
+		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_eint_input1!\n");
+		return ret;
+	}
+/*[Arima_8100][bozhi_lin] 20161101 end*/
 	TPD_DEBUG("[tpd%d] mt_tpd_pinctrl----------\n", pdev->id);
 	return 0;
 }

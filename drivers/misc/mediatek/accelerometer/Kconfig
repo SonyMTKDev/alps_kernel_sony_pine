@@ -37,3 +37,8 @@ source "drivers/misc/mediatek/accelerometer/bmc156_acc/Kconfig"
 source "drivers/misc/mediatek/accelerometer/mma8653/Kconfig"
 source "drivers/misc/mediatek/accelerometer/KXTJ2_1009-new/Kconfig"
 source "drivers/misc/mediatek/accelerometer/rt3000/Kconfig"
+#[SM31][Sensors][JasonHsing] G-sensor mxc400x driver porting 20161004 --
+source "drivers/misc/mediatek/accelerometer/mxc400x/Kconfig"
+#[SM31][Sensors][JasonHsing] G-sensor bma422 driver porting 20161012 --
+source "drivers/misc/mediatek/accelerometer/bma4xy/Kconfig"
+

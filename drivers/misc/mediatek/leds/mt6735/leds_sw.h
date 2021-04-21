@@ -27,6 +27,9 @@ enum mt65xx_led_type {
 	MT65XX_LED_TYPE_KEYBOARD,
 	MT65XX_LED_TYPE_BUTTON,
 	MT65XX_LED_TYPE_LCD,
+// [SM31][RGBLED][akenhsu] Porting KTD2037 LED control IC 20161003 BEGIN
+	MT65XX_LED_TYPE_RGB,
+// [SM31][RGBLED][akenhsu] 20161003 END
 	MT65XX_LED_TYPE_TOTAL,
 };
 
@@ -37,6 +40,9 @@ enum mt65xx_led_mode {
 	MT65XX_LED_MODE_PMIC,
 	MT65XX_LED_MODE_CUST_LCM,
 	MT65XX_LED_MODE_CUST_BLS_PWM
+// [SM31][RGBLED][akenhsu] Porting KTD2037 LED control IC 20161003 BEGIN
+	, MT65XX_LED_MODE_CUST_RGB
+// [SM31][RGBLED][akenhsu] 20161003 END
 };
 
 /******************************************************************************

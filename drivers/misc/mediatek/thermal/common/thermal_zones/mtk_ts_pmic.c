@@ -238,11 +238,33 @@ static int tspmic_sysrst_get_cur_state(struct thermal_cooling_device *cdev, unsi
 	*state = cl_dev_sysrst_state;
 	return 0;
 }
-
+//<--[SM31][PSM][JasonHsing] Porting reset thermal alert for improve RCA logs 20161117 BEGIN --
 static int tspmic_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
+	struct file *fp;
+	mm_segment_t fs;
+	loff_t pos;
 	cl_dev_sysrst_state = state;
 	if (cl_dev_sysrst_state == 1) {
+	
+		fp = filp_open("/data/dumpsys/sysrst.dat", O_RDWR|O_CREAT, 0666);
+		if (IS_ERR(fp))
+		{
+			pr_debug("No sysrst.dat file\n");
+		}
+		else
+		{
+			pos = 0;
+			fs = get_fs();
+			set_fs(KERNEL_DS);
+			vfs_write(fp, cdev->type, sizeof(cdev->type), &pos);	
+			filp_close(fp, NULL);				
+			vfs_fsync(fp, 0);
+			set_fs(fs);
+			pr_debug("vfs_write %s File\n", cdev->type);
+		}
+		mdelay(5);
+
 		mtktspmic_info("Power/PMIC_Thermal: reset, reset, reset!!!");
 		mtktspmic_info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 		mtktspmic_info("*****************************************");
@@ -254,7 +276,7 @@ static int tspmic_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsi
 	}
 	return 0;
 }
-
+//-->[SM31][PSM][JasonHsing] Porting reset thermal alert for improve RCA logs 20161122 END --
 static struct thermal_cooling_device_ops mtktspmic_cooling_sysrst_ops = {
 	.get_max_state = tspmic_sysrst_get_max_state,
 	.get_cur_state = tspmic_sysrst_get_cur_state,

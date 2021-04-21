@@ -66,6 +66,8 @@ static kuid_t binder_context_mgr_uid = INVALID_UID;
 static int binder_last_id;
 static struct workqueue_struct *binder_deferred_workqueue;
 
+#define BINDER_MIN_ALLOC (1 * PAGE_SIZE)
+
 #define RT_PRIO_INHERIT			"v1.7"
 #ifdef RT_PRIO_INHERIT
 #include <linux/sched/rt.h>
@@ -438,9 +440,10 @@ struct binder_buffer {
 };
 
 enum binder_deferred_state {
-	BINDER_DEFERRED_PUT_FILES	= 0x01,
-	BINDER_DEFERRED_FLUSH		= 0x02,
-	BINDER_DEFERRED_RELEASE		= 0x04,
+
+	BINDER_DEFERRED_PUT_FILES    = 0x01,
+	BINDER_DEFERRED_FLUSH        = 0x02,
+	BINDER_DEFERRED_RELEASE      = 0x04,
 };
 
 #ifdef BINDER_MONITOR
@@ -463,6 +466,7 @@ struct binder_proc {
 	struct mm_struct *vma_vm_mm;
 	struct task_struct *tsk;
 	struct files_struct *files;
+	struct mutex files_lock;
 	struct hlist_node deferred_work_node;
 	int deferred_work;
 	void *buffer;
@@ -1193,8 +1197,6 @@ static void binder_check_buf(struct binder_proc *target_proc, size_t size, int i
 		ptr += snprintf(aee_msg+ptr, sizeof(aee_msg)-ptr,
 			"large data size,check sender %d(%s)! check kernel log\n",
 			binder_check_buf_pid, sender ? sender->comm : "");
-		ptr += snprintf(aee_msg+ptr, sizeof(aee_msg)-ptr,
-			"CR_DISPATCH_PROCESSNAME:%s\n", sender ? sender->comm : "");
 	} else {
 		if (target_proc->large_buffer) {
 			pr_debug("on %d:0 the largest pending trans is:\n", target_proc->pid);
@@ -1226,7 +1228,7 @@ static void binder_check_buf(struct binder_proc *target_proc, size_t size, int i
 				tm.tm_hour, tm.tm_min, tm.tm_sec,
 				(unsigned long)(tv.tv_usec / USEC_PER_MSEC));
 			ptr += snprintf(aee_msg+ptr, sizeof(aee_msg)-ptr,
-				"large data size,check sender %d(%s)!\n",
+				"large data size,check sender %d(%s)! check kernel log\n",
 				(larger != NULL) ? larger->pid : 0,
 				(larger != NULL) ? larger->comm : "");
 		} else {
@@ -1253,14 +1255,10 @@ static void binder_check_buf(struct binder_proc *target_proc, size_t size, int i
 				(tm.tm_mon + 1), tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
 				(unsigned long)(tv.tv_usec / USEC_PER_MSEC));
 			ptr += snprintf(aee_msg+ptr, sizeof(aee_msg)-ptr,
-				"%d small trans pending, check receiver %d(%s)!\n",
+				"%d small trans pending, check receiver %d(%s)! check kernel log\n",
 				i, target_proc->pid,
 				target_proc->tsk ? target_proc->tsk->comm : "");
-			ptr += snprintf(aee_msg+ptr, sizeof(aee_msg)-ptr,
-				"CR_DISPATCH_PROCESSNAME:%s\n",
-				target_proc->tsk ? target_proc->tsk->comm : "");
 		}
-
 	}
 
 	binder_check_buf_pid = -1;
@@ -1270,22 +1268,32 @@ static void binder_check_buf(struct binder_proc *target_proc, size_t size, int i
 #endif
 }
 #endif
+
 static int task_get_unused_fd_flags(struct binder_proc *proc, int flags)
 {
-	struct files_struct *files = proc->files;
 	unsigned long rlim_cur;
 	unsigned long irqs;
 
-	if (files == NULL)
-		return -ESRCH;
+	int ret;
 
-	if (!lock_task_sighand(proc->tsk, &irqs))
-		return -EMFILE;
+	mutex_lock(&proc->files_lock);
+	if (proc->files == NULL) {
+		ret = -ESRCH;
+		goto err;
+	}
+
+	if (!lock_task_sighand(proc->tsk, &irqs)) {
+		ret = -EMFILE;
+		goto err;
+	}
 
 	rlim_cur = task_rlimit(proc->tsk, RLIMIT_NOFILE);
 	unlock_task_sighand(proc->tsk, &irqs);
 
-	return __alloc_fd(files, 0, rlim_cur, flags);
+	ret = __alloc_fd(proc->files, 0, rlim_cur, flags);
+err:
+	mutex_unlock(&proc->files_lock);
+	return ret;
 }
 
 /*
@@ -1293,8 +1301,10 @@ static int task_get_unused_fd_flags(struct binder_proc *proc, int flags)
  */
 static void task_fd_install(struct binder_proc *proc, unsigned int fd, struct file *file)
 {
+	mutex_lock(&proc->files_lock);
 	if (proc->files)
 		__fd_install(proc->files, fd, file);
+	mutex_unlock(&proc->files_lock);
 }
 
 /*
@@ -1304,8 +1314,11 @@ static long task_close_fd(struct binder_proc *proc, unsigned int fd)
 {
 	int retval;
 
-	if (proc->files == NULL)
-		return -ESRCH;
+	mutex_lock(&proc->files_lock);
+	if (proc->files == NULL) {
+		retval = -ESRCH;
+		goto err;
+	}
 
 	retval = __close_fd(proc->files, fd);
 	/* can't restart close syscall because file table entry was cleared */
@@ -1313,7 +1326,8 @@ static long task_close_fd(struct binder_proc *proc, unsigned int fd)
 		     retval == -ERESTARTNOINTR ||
 		     retval == -ERESTARTNOHAND || retval == -ERESTART_RESTARTBLOCK))
 		retval = -EINTR;
-
+err:
+	mutex_unlock(&proc->files_lock);
 	return retval;
 }
 
@@ -1431,8 +1445,17 @@ static struct binder_buffer *binder_buffer_lookup(struct binder_proc *proc, uint
 			n = n->rb_left;
 		else if (kern_ptr > buffer)
 			n = n->rb_right;
-		else
+		else {
+			/*
+			 * Guard against user threads attempting to
+			 * free the buffer when in use by kernel or
+			 * after it's already been freed.
+			 */
+			if (!buffer->allow_user_free)
+				return ERR_PTR(-EPERM);
+			buffer->allow_user_free = 0;
 			return buffer;
+		}
 	}
 	return NULL;
 }
@@ -1660,6 +1683,7 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
 
 	rb_erase(best_fit, &proc->free_buffers);
 	buffer->free = 0;
+	buffer->allow_user_free = 0;
 	binder_insert_allocated_buffer(proc, buffer);
 	if (buffer_size != size) {
 		struct binder_buffer *new_buffer = (void *)buffer->data + size;
@@ -2611,7 +2635,6 @@ static void binder_transaction(struct binder_proc *proc,
 		return_error = BR_FAILED_REPLY;
 		goto err_binder_alloc_buf_failed;
 	}
-	t->buffer->allow_user_free = 0;
 	t->buffer->debug_id = t->debug_id;
 	t->buffer->transaction = t;
 #ifdef BINDER_MONITOR
@@ -3134,14 +3157,18 @@ static int binder_thread_write(struct binder_proc *proc,
 			ptr += sizeof(binder_uintptr_t);
 
 			buffer = binder_buffer_lookup(proc, data_ptr);
-			if (buffer == NULL) {
-				binder_user_error("%d:%d BC_FREE_BUFFER u%016llx no match\n",
-					proc->pid, thread->pid, (u64)data_ptr);
-				break;
-			}
-			if (!buffer->allow_user_free) {
-				binder_user_error("%d:%d BC_FREE_BUFFER u%016llx matched unreturned buffer\n",
-					proc->pid, thread->pid, (u64) data_ptr);
+			if (IS_ERR_OR_NULL(buffer)) {
+				if (PTR_ERR(buffer) == -EPERM) {
+					binder_user_error(
+							"%d:%d BC_FREE_BUFFER u%016llx matched unreturned or currently freeing buffer\n",
+							proc->pid, thread->pid,
+							(u64)data_ptr);
+				} else {
+					binder_user_error(
+							"%d:%d BC_FREE_BUFFER u%016llx no match\n",
+							proc->pid, thread->pid,
+							(u64)data_ptr);
+				}
 				break;
 			}
 			binder_debug(BINDER_DEBUG_FREE_BUFFER,
@@ -4116,6 +4143,9 @@ static int binder_ioctl_set_ctx_mgr(struct file *filp, struct binder_thread
 		goto out;
 	}
 
+	ret = security_binder_set_context_mgr(proc->tsk);
+	if (ret < 0)
+		goto out;
 	if (uid_valid(binder_context_mgr_uid)) {
 		if (!uid_eq(binder_context_mgr_uid, curr_euid)) {
 			pr_err("BINDER_SET_CONTEXT_MGR bad uid %d != %d\n",
@@ -4183,9 +4213,6 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case BINDER_SET_CONTEXT_MGR:
 		ret = binder_ioctl_set_ctx_mgr(filp, thread);
 		if (ret)
-			goto err;
-		ret = security_binder_set_context_mgr(proc->tsk);
-		if (ret < 0)
 			goto err;
 		break;
 	case BINDER_THREAD_EXIT:
@@ -4313,6 +4340,11 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
 		}
 	}
 #endif
+	if (vma->vm_end - vma->vm_start < BINDER_MIN_ALLOC) {
+		ret = -EINVAL;
+		failure_string = "VMA size < BINDER_MIN_ALLOC";
+		goto err_vma_too_small;
+	}
 	proc->pages =
 	    kzalloc(sizeof(proc->pages[0]) *
 		    ((vma->vm_end - vma->vm_start) / PAGE_SIZE), GFP_KERNEL);
@@ -4338,7 +4370,9 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
 	binder_insert_free_buffer(proc, buffer);
 	proc->free_async_space = proc->buffer_size / 2;
 	barrier();
+	mutex_lock(&proc->files_lock);
 	proc->files = get_files_struct(current);
+	mutex_unlock(&proc->files_lock);
 	proc->vma = vma;
 	proc->vma_vm_mm = vma->vm_mm;
 
@@ -4350,6 +4384,7 @@ err_alloc_small_buf_failed:
 	kfree(proc->pages);
 	proc->pages = NULL;
 err_alloc_pages_failed:
+err_vma_too_small:
 	mutex_lock(&binder_mmap_lock);
 	vfree(proc->buffer);
 	proc->buffer = NULL;
@@ -4374,6 +4409,7 @@ static int binder_open(struct inode *nodp, struct file *filp)
 		return -ENOMEM;
 	get_task_struct(current);
 	proc->tsk = current;
+	mutex_init(&proc->files_lock);
 	INIT_LIST_HEAD(&proc->todo);
 	init_waitqueue_head(&proc->wait);
 	proc->default_priority = task_nice(current);
@@ -4672,9 +4708,11 @@ static void binder_deferred_func(struct work_struct *work)
 
 		files = NULL;
 		if (defer & BINDER_DEFERRED_PUT_FILES) {
+			mutex_lock(&proc->files_lock);
 			files = proc->files;
 			if (files)
 				proc->files = NULL;
+			mutex_unlock(&proc->files_lock);
 		}
 
 		if (defer & BINDER_DEFERRED_FLUSH)

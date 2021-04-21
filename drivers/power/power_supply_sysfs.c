@@ -223,10 +223,38 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(present_smb),
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_ATTR(adjust_power),
+/*[Arima_8100][bozhi_lin] FP22589: Battery Swelling mitigation for retail demo units 20161027 begin*/
+#if defined(CONFIG_STOP_CHARGING_IN_DEMOAPP)
+	POWER_SUPPLY_ATTR(enable_llk),
+#endif
+/*[Arima_8100][bozhi_lin] 20161027 end*/
+/*[Arima_8100][bozhi_lin] RID001582 - Soft charge 3.0 20161116 begin*/
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+	POWER_SUPPLY_ATTR(sc3_40_init_time),
+	POWER_SUPPLY_ATTR(sc3_40_charging_time),
+	POWER_SUPPLY_ATTR(sc3_30_init_time),
+	POWER_SUPPLY_ATTR(sc3_30_charging_time),
+	POWER_SUPPLY_ATTR(sc3_20_init_time),
+	POWER_SUPPLY_ATTR(sc3_20_charging_time),
+/*[Arima_8100][bozhi_lin] RID003588 Battery Health test in the Service Menu 20161124 begin*/
+	POWER_SUPPLY_ATTR(sc3_fcc_mah_0),
+	POWER_SUPPLY_ATTR(sc3_fcc_mah_1),
+	POWER_SUPPLY_ATTR(sc3_fcc_mah_2),
+	POWER_SUPPLY_ATTR(sc3_fcc_mah_3),
+	POWER_SUPPLY_ATTR(sc3_fcc_mah_4),
+/*[Arima_8100][bozhi_lin] 20161124 end*/
+#endif
+/*[Arima_8100][bozhi_lin] 20161116 end*/
+#ifdef CONFIG_CHARGER_QNS
+	POWER_SUPPLY_ATTR(max_charge_current),
+#endif
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_ATTR(model_name),
 	POWER_SUPPLY_ATTR(manufacturer),
 	POWER_SUPPLY_ATTR(serial_number),
+#ifdef CONFIG_CHARGER_QNS
+	POWER_SUPPLY_ATTR(battery_type),
+#endif
 };
 
 static struct attribute *
@@ -349,6 +377,15 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
 
 		dev_dbg(dev, "prop %s=%s\n", attrname, prop_buf);
 
+/*[Arima_8100][bozhi_lin] fix power_supply_uevent error 20161124 begin*/
+#if 1
+		if ((env->envp_idx+1) >= UEVENT_NUM_ENVP) {
+			kfree(attrname);
+			ret = 0;
+			goto out;	
+		}
+#endif
+/*[Arima_8100][bozhi_lin] 20161124 end*/
 		ret = add_uevent_var(env, "POWER_SUPPLY_%s=%s", attrname, prop_buf);
 		kfree(attrname);
 		if (ret)

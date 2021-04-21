@@ -3198,11 +3198,57 @@ void chrdet_int_handler(void)
 
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 		    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+// [SM31][RGBLED][akenhsu] Solve LED will not be OFF while removing USB in OFF-CHarging mode 20161024 BEGIN
+			{
+				extern int ktd2037_rgb_led_off(void);
+				ktd2037_rgb_led_off();
+			}
+// [SM31][RGBLED][akenhsu] 20161024 END
 			PMICLOG("[chrdet_int_handler] Unplug Charger/USB\n");
+/*[Arima_8100][bozhi_lin] fix CHARGING_HOST will power-off before enter off-charging mode 20170302 begin*/
+/*[Arima_8100][bozhi_lin] fix NONSTANDARD_CHARGER & CHARGING_HOST will re-detcet in off-charging mode cause reboot 20170227 begin*/
+#if 0
+			{
+				if (BMT_status.charger_type == CHARGING_HOST) {
+					static bool first_boot = true;
+					if (first_boot) {
+						extern CHARGER_TYPE First_Boot_CHR_Type;
+						First_Boot_CHR_Type = BMT_status.charger_type;
+						first_boot = false;
+						return;
+					} else {
+						mt_power_off();
+					}
+				} else {
+					mt_power_off();
+				}
+			}
+#else
+/*[Arima_8100][bozhi_lin] fix can not leave off-charging mode and crash after remove cable 20170511 begin*/
+/*[Arima_8100][bozhi_lin] RID003699 OVP warning message to end-user 20170323 begin*/
+#if 1
+			if (1) {
+				printk("[B]%s(%d): skip mt_power_off when boot-up\n", __func__, __LINE__);
+			} else {
+				mt_power_off();
+			}
+#else
 			mt_power_off();
+#endif
+/*[Arima_8100][bozhi_lin] 20170323 end*/
+/*[Arima_8100][bozhi_lin] 20170511 end*/
+#endif
+/*[Arima_8100][bozhi_lin] 20170227 end*/
+/*[Arima_8100][bozhi_lin] 20170302 end*/
 		}
 	}
 #endif
+// [SM31][RGBLED][DMS09522587][akenhsu] Solve BatteryLED not OFF when unlock device while bootup 20170120 BEGIN
+	{
+		extern int ktd2037_rgb_led_off(void);
+		if (!upmu_get_rgs_chrdet()) ktd2037_rgb_led_off();
+	}
+// [SM31][RGBLED][DMS09522587][akenhsu] 20170120 END
 	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	do_chrdet_int_task();

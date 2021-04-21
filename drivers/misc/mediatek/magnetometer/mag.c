@@ -888,8 +888,7 @@ int mag_data_report(enum MAG_TYPE type, int x, int y, int z, int status, int64_t
 	struct mag_context *cxt = NULL;
 
 	check_repeat_data(x, y, z);
-	if (MAGNETIC == type)
-		check_abnormal_data(x, y, z, status);
+	check_abnormal_data(x, y, z, status);
 
 	cxt = mag_context_obj;
 	if (MAGNETIC == type) {

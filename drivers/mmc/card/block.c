@@ -3598,7 +3598,7 @@ static const struct mmc_fixup blk_fixups[] = {
 		  MMC_QUIRK_DISABLE_CACHE),
 #endif
 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_SANDISK_EMMC, CID_OEMID_ANY, add_quirk_mmc,
-		MMC_QUIRK_DISABLE_SNO),
+		  MMC_QUIRK_DISABLE_SNO),
 
 	END_FIXUP
 };

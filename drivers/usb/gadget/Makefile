@@ -9,6 +9,12 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLA
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_boost
 
+# [Arima_8100][bozhi_lin] For Kernel crash happened musb_g_giveback, add stack dump to collect debug information 20170502 begin
+ifeq ($(strip $(TARGET_BUILD_VARIANT)),user)
+	subdir-ccflags-y += -DUSER_BUILD
+endif
+# [Arima_8100][bozhi_lin] 20170502 end
+
 ccflags-y				+= -I$(srctree)/drivers/usb/gadget/udc -I$(srctree)/drivers/usb/gadget/function
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/c2k_ccci/
 ccflags-y += -I$(srctree)/drivers/usb/gadget/

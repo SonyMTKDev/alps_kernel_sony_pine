@@ -155,6 +155,15 @@ struct usbtypc {
 struct usbtypc {
 	struct typec_switch_data *host_driver;
 	struct typec_switch_data *device_driver;
+/*[Arima_8100][bozhi_lin] RichTek rt1711 usb type c driver porting 20161019 begin*/
+#elif defined(CONFIG_TCPC_CLASS)
+struct usbtypc {
+	struct typec_switch_data *host_driver;
+	struct typec_switch_data *device_driver;
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+	bool sib_enable;
+#endif /* CONFIG_MTK_SIB_USB_SWITCH */
+/*[Arima_8100][bozhi_lin] 20161019 end*/
 };
 #endif
 

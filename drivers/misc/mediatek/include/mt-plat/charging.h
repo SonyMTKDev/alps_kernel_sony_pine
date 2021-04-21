@@ -58,6 +58,16 @@
 /* ============================================================ */
 /* define */
 /* ============================================================ */
+/*[Arima_8100][bozhi_lin] enable charging maintenance 20161208 begin*/
+/*[Arima_8100][bozhi_lin] temp disable charging maintenance 20161104 begin*/
+/*[Arima_8100][bozhi_lin] charging maintenance implement 20161104 begin*/
+/*[Arima_8100][bozhi_lin] charging maintenance implement 20161102 begin*/
+#define CHARGING_MAINTAIN
+/*[Arima_8100][bozhi_lin] 20161102 end*/
+/*[Arima_8100][bozhi_lin] 20161104 end*/
+/*[Arima_8100][bozhi_lin] 20161104 end*/
+/*[Arima_8100][bozhi_lin] 20161208 end*/
+
 /*****************************************************************************
  *  Log
  ****************************************************************************/
@@ -141,6 +151,15 @@ typedef enum {
 	CHARGING_CMD_RUN_AICL,
 	CHARGING_CMD_SET_IRCMP_RESISTOR,
 	CHARGING_CMD_SET_IRCMP_VOLT_CLAMP,
+/*[Arima_8100][bozhi_lin] charging maintenance implement 20161102 begin*/
+#if defined(CHARGING_MAINTAIN)
+	CHARGING_CMD_ENABLE_TE_SHUTDOWN,
+#endif
+/*[Arima_8100][bozhi_lin] 20161102 end*/
+/*[Arima_8100][bozhi_lin] RID003699 OVP warning message to end-user 20170320 begin*/
+	CHARGING_CMD_GET_VINOVPI,
+	CHARGING_CMD_GET_IS_CHARGING,
+/*[Arima_8100][bozhi_lin] 20170320 end*/
 	CHARGING_CMD_NUMBER
 } CHARGING_CTRL_CMD;
 

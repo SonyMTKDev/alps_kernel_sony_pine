@@ -45,7 +45,6 @@ OS_SYSTIME g_arMissTimeout[CFG_STA_REC_NUM][CFG_RX_MAX_BA_TID_NUM];
 #if ARP_MONITER_ENABLE
 static UINT_16 arpMoniter;
 static UINT_8 apIp[4];
-static UINT_8 gatewayIp[4];
 #endif
 /*******************************************************************************
 *                                 M A C R O S
@@ -932,9 +931,6 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 				break;	/*default */
 			}	/* switch (prCurrentMsduInfo->ucStaRecIndex) */
-#if 0  /*TGn AP mode N-4.2.25 causes a large number of forwarding packets.
-		* Disable this drop mechanism to raise the throughput.
-		*/
 
 			if (prCurrentMsduInfo->eSrc == TX_PACKET_FORWARDING) {
 				if (prTxQue->u4NumElem > 32) {
@@ -945,7 +941,7 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 					TX_INC_CNT(&prAdapter->rTxCtrl, TX_FORWARD_OVERFLOW_DROP);
 				}
 			}
-#endif
+
 		} else {
 
 			DBGLOG(QM, WARN, "Drop the Packet for inactive Bss %u\n", prCurrentMsduInfo->ucNetworkType);
@@ -1475,9 +1471,10 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 #if CFG_ENABLE_WIFI_DIRECT
 			/* XXX The PHASE 2: decrease from  aucFreeQuotaPerQueue[] */
 			if (prStaRec->fgIsInPS && (ucTC != TC4_INDEX)) {
-				if ((pucFreeQuota) && (*pucFreeQuota > 0))
+				ASSERT(pucFreeQuota);
+				ASSERT(*pucFreeQuota > 0);
+				if (*pucFreeQuota > 0)
 					*pucFreeQuota = *pucFreeQuota - 1;
-
 			}
 #endif /* CFG_ENABLE_WIFI_DIRECT */
 
@@ -2905,7 +2902,6 @@ VOID qmPopOutDueToFallAhead(P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReorderQ
 
 		/* SN > WinStart, break to update WinEnd */
 		else {
-			prReorderQueParm->fgHasBubbleInQue = TRUE;
 			/* Start bubble timer */
 			if (!prReorderQueParm->fgHasBubble) {
 				cnmTimerStartTimer(prAdapter,
@@ -3249,6 +3245,16 @@ VOID qmInsertNoNeedWaitPkt(IN P_ADAPTER_T prAdapter,
 	P_RX_BA_ENTRY_T prRxBaEntry;
 	P_NO_NEED_WAIT_PKT_T prNoNeedWaitPkt;
 
+	prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) kalMemAlloc(sizeof(NO_NEED_WAIT_PKT_T), VIR_MEM_TYPE);
+
+
+
+	if (prNoNeedWaitPkt == NULL) {
+		DBGLOG(QM, ERROR, "qmInsertNoNeedWaitPkt alloc error SSN:[%u], DropReason:(%d)\n",
+			prSwRfb->u2SSN, eDropReason);
+		return;
+	}
+
 	/* Check whether the STA_REC is activated */
 	prStaRec = &(prAdapter->arStaRec[prSwRfb->ucStaRecIdx]);
 	ASSERT(prStaRec);
@@ -3261,20 +3267,10 @@ VOID qmInsertNoNeedWaitPkt(IN P_ADAPTER_T prAdapter,
 		return;
 	}
 
-	prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) kalMemAlloc(sizeof(NO_NEED_WAIT_PKT_T), VIR_MEM_TYPE);
-
-	if (prNoNeedWaitPkt == NULL) {
-		DBGLOG(QM, ERROR, "qmInsertNoNeedWaitPkt alloc error SSN:[%u], DropReason:(%d)\n",
-			prSwRfb->u2SSN, eDropReason);
-		return;
-	}
 
 	prNoNeedWaitPkt->u2SSN = prSwRfb->u2SSN;
 	prNoNeedWaitPkt->eDropReason = eDropReason;
-	if (eDropReason == PACKET_DROP_BY_FW)
-		DBGLOG(QM, INFO, "qmInsertNoNeedWaitPkt SSN:[%u], DropReason:(%d)\n", prSwRfb->u2SSN, eDropReason);
-	else
-		DBGLOG(QM, TRACE, "qmInsertNoNeedWaitPkt SSN:[%u], DropReason:(%d)\n", prSwRfb->u2SSN, eDropReason);
+	DBGLOG(QM, INFO, "qmInsertNoNeedWaitPkt SSN:[%u], DropReason:(%d)\n", prSwRfb->u2SSN, eDropReason);
 	QUEUE_INSERT_TAIL(&(prRxBaEntry->rNoNeedWaitQue), (P_QUE_ENTRY_T) prNoNeedWaitPkt);
 }
 
@@ -3387,52 +3383,6 @@ VOID qmHandleNoNeedWaitPktList(IN P_RX_BA_ENTRY_T prReorderQueParm)
 			kalMemFree(prNoNeedWaitPkt, VIR_MEM_TYPE, sizeof(NO_NEED_WAIT_PKT_T));
 		}
 	}
-}
-
-VOID qmHandleNoNeedWaitStopBubTimer(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReorderQueParm)
-{
-	QUE_T rReturnedQue;
-	P_QUE_T prReturnedQue = &rReturnedQue;
-	P_SW_RFB_T prSwRfb;
-
-	QUEUE_INITIALIZE(prReturnedQue);
-	prReorderQueParm->fgHasBubbleInQue = FALSE;
-
-	qmPopOutDueToFallAhead(prAdapter, prReorderQueParm, prReturnedQue);
-
-	DBGLOG(QM, INFO, "qmHandleNoNeedWaitStopBubTimer BubInQue[%d] STA[%u] TID[%u] BubSN[%u] Win{%d, %d}\n",
-			   prReorderQueParm->fgHasBubbleInQue,
-			   prReorderQueParm->ucStaRecIdx,
-			   prReorderQueParm->ucTid,
-			   prReorderQueParm->u2FirstBubbleSn,
-			   prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
-
-	if (prReorderQueParm->fgHasBubbleInQue == FALSE) {
-		/* Stop bubble timer if there are no bubbles in reorder queue. */
-		cnmTimerStopTimer(prAdapter, &(prReorderQueParm->rReorderBubbleTimer));
-
-		prReorderQueParm->fgHasBubble = FALSE;
-
-		if (QUEUE_IS_NOT_EMPTY(prReturnedQue)) {
-			QM_TX_SET_NEXT_MSDU_INFO((P_SW_RFB_T) QUEUE_GET_TAIL(prReturnedQue), NULL);
-
-			prSwRfb = (P_SW_RFB_T) QUEUE_GET_HEAD(prReturnedQue);
-			while (prSwRfb) {
-				DBGLOG(QM, TRACE,
-					   "qmHandleNoNeedWaitStopBubTimer Flush STA[%u] TID[%u] Pop Out SN[%u]\n",
-					prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid, prSwRfb->u2SSN);
-
-				prSwRfb = (P_SW_RFB_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prSwRfb);
-			}
-
-			wlanProcessQueuedSwRfb(prAdapter, (P_SW_RFB_T) QUEUE_GET_HEAD(prReturnedQue));
-		} else {
-			DBGLOG(QM, TRACE, "qmHandleNoNeedWaitStopBubTimer Flush STA[%u] TID[%u] Pop Out 0 packet\n",
-					   prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid);
-		}
-	}
-
-	qmHandleMissTimeout(prReorderQueParm);
 }
 
 P_NO_NEED_WAIT_PKT_T qmSearchNoNeedWaitPktBySSN(IN P_RX_BA_ENTRY_T prReorderQueParm, IN UINT_32 u2SSN)
@@ -4932,11 +4882,10 @@ VOID qmDetectArpNoResponse(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 		return;
 	u2EtherType = (pucData[ETH_TYPE_LEN_OFFSET] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 1]);
 
-	if (u2EtherType != ETH_P_ARP)
+	if (u2EtherType != ETH_P_ARP || (apIp[0] | apIp[1] | apIp[2] | apIp[3]) == 0)
 		return;
 
-	if (kalMemCmp(apIp, &pucData[ETH_TYPE_LEN_OFFSET + 26], sizeof(apIp)) &&
-		kalMemCmp(gatewayIp, &pucData[ETH_TYPE_LEN_OFFSET + 26], sizeof(gatewayIp))) /* dest ip address */
+	if (kalMemCmp(apIp, &pucData[ETH_TYPE_LEN_OFFSET + 26], sizeof(apIp))) /* dest ip address */
 		return;
 
 	arpOpCode = (pucData[ETH_TYPE_LEN_OFFSET + 8] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 8 + 1]);
@@ -4984,103 +4933,10 @@ VOID qmHandleRxArpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
 	}
 }
 
-VOID qmHandleRxDhcpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
-{
-	PUINT_8 pucData = NULL;
-	PUINT_8 pucEthBody = NULL;
-	PUINT_8 pucUdpBody = NULL;
-	UINT_32 udpLength = 0;
-	UINT_32 i = 0;
-	P_BOOTP_PROTOCOL_T prBootp = NULL;
-	UINT_32 u4DhcpMagicCode = 0;
-	UINT_8 dhcpTypeGot = 0;
-	UINT_8 dhcpGatewayGot = 0;
-
-	if (prSwRfb->u2PacketLen <= ETHER_HEADER_LEN)
-		return;
-
-	pucData = (PUINT_8)prSwRfb->pvHeader;
-	if (!pucData)
-		return;
-	if (((pucData[ETH_TYPE_LEN_OFFSET] << 8) | pucData[ETH_TYPE_LEN_OFFSET + 1]) != ETH_P_IPV4)
-		return;
-
-	pucEthBody = &pucData[ETH_HLEN];
-	if (((pucEthBody[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET) != IPVERSION)
-		return;
-	if (pucEthBody[9] != IP_PRO_UDP)
-		return;
-
-	pucUdpBody = &pucEthBody[(pucEthBody[0] & 0x0F) * 4];
-	if ((pucUdpBody[0] << 8 | pucUdpBody[1]) != UDP_PORT_DHCPS ||
-		(pucUdpBody[2] << 8 | pucUdpBody[3]) != UDP_PORT_DHCPC)
-		return;
-
-	udpLength = pucUdpBody[4] << 8 | pucUdpBody[5];
-
-	prBootp = (P_BOOTP_PROTOCOL_T) &pucUdpBody[8];
-
-	WLAN_GET_FIELD_BE32(&prBootp->aucOptions[0], &u4DhcpMagicCode);
-	if (u4DhcpMagicCode != DHCP_MAGIC_NUMBER) {
-		DBGLOG(INIT, WARN, "dhcp wrong magic number, magic code: %d\n", u4DhcpMagicCode);
-		return;
-	}
-
-	/* 1. 248 is from udp header to the beginning of dhcp option
-	 * 2. not sure the dhcp option always usd 255 as a end mark? if so, while condition should be removed?
-	 */
-	while (i < udpLength - 248) {
-		/* bcz of the strange P_BOOTP_PROTOCOL_T, the dhcp magic code was count in dhcp options
-		 * so need to [i + 4] to skip it
-		 */
-		switch (prBootp->aucOptions[i + 4]) {
-		case 3:
-			/* both dhcp ack and offer will update it */
-			if (prBootp->aucOptions[i + 6] ||
-				prBootp->aucOptions[i + 7] ||
-				prBootp->aucOptions[i + 8] ||
-				prBootp->aucOptions[i + 9]) {
-				gatewayIp[0] = prBootp->aucOptions[i + 6];
-				gatewayIp[1] = prBootp->aucOptions[i + 7];
-				gatewayIp[2] = prBootp->aucOptions[i + 8];
-				gatewayIp[3] = prBootp->aucOptions[i + 9];
-
-				DBGLOG(INIT, TRACE, "Gateway ip: %d.%d.%d.%d\n",
-					gatewayIp[0],
-					gatewayIp[1],
-					gatewayIp[2],
-					gatewayIp[3]);
-			};
-			dhcpGatewayGot = 1;
-			break;
-		case 53:
-			if (prBootp->aucOptions[i + 6] != 0x02 && prBootp->aucOptions[i + 6] != 0x05) {
-				DBGLOG(INIT, WARN, "wrong dhcp message type, type: %d\n", prBootp->aucOptions[i + 6]);
-				if (dhcpGatewayGot)
-					kalMemZero(gatewayIp, sizeof(gatewayIp));
-				return;
-			}
-			dhcpTypeGot = 1;
-			break;
-		case 255:
-			return;
-
-		default:
-			break;
-		}
-		if (dhcpGatewayGot && dhcpTypeGot)
-			return;
-
-		i += prBootp->aucOptions[i + 5] + 2;
-	}
-	DBGLOG(INIT, WARN, "can't find the dhcp option 255?, need to check the net log\n");
-}
-
 VOID qmResetArpDetect(VOID)
 {
 	arpMoniter = 0;
 	kalMemZero(apIp, sizeof(apIp));
-	kalMemZero(gatewayIp, sizeof(gatewayIp));
 }
 #endif
 
@@ -5163,14 +5019,13 @@ VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 
 	/* Sanity Check */
 	if (!prReorderQueParm || !prReorderQueParm->fgIsValid || !prReorderQueParm->fgHasBubble) {
-		if (!prReorderQueParm) {
-			DBGLOG(QM, WARN, "QM:Bub Check Cancel STA[%u] TID[%u]. QueParm is NULL.",
-				prCheckReorderEvent->ucStaRecIdx, prCheckReorderEvent->ucTid);
-		} else {
+		if (prReorderQueParm) {
 			DBGLOG(QM, WARN, "QM:Bub Check Cancel STA[%u] TID[%u]. QueParm %p valid %d has bubble %d\n",
-					prCheckReorderEvent->ucStaRecIdx,
-					prCheckReorderEvent->ucTid, prReorderQueParm,
-					prReorderQueParm->fgIsValid, prReorderQueParm->fgHasBubble);
+				   prCheckReorderEvent->ucStaRecIdx, prCheckReorderEvent->ucTid, prReorderQueParm,
+				   prReorderQueParm->fgIsValid, prReorderQueParm->fgHasBubble);
+		} else {
+			DBGLOG(QM, WARN, "QM:Bub Check Cancel STA[%u] TID[%u].\n",
+				   prCheckReorderEvent->ucStaRecIdx, prCheckReorderEvent->ucTid);
 		}
 		return;
 	}
@@ -5239,25 +5094,8 @@ VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 				   prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
 	}
 
-	qmHandleMissTimeout(prReorderQueParm);
-
 }
 
-VOID qmHandleMissTimeout(IN P_RX_BA_ENTRY_T prReorderQueParm)
-{
-	P_QUE_T prReorderQue;
-	OS_SYSTIME *prMissTimeout;
 
-	prReorderQue = &(prReorderQueParm->rReOrderQue);
-
-	prMissTimeout = &g_arMissTimeout[prReorderQueParm->ucStaRecIdx][prReorderQueParm->ucTid];
-	if (QUEUE_IS_EMPTY(prReorderQue)) {
-		DBGLOG(QM, TRACE, "QM:(Bub Check) Reset prMissTimeout to zero\n");
-		*prMissTimeout = 0;
-	} else {
-		DBGLOG(QM, TRACE, "QM:(Bub Check) Reset prMissTimeout to current time\n");
-		GET_CURRENT_SYSTIME(prMissTimeout);
-	}
-}
 
 

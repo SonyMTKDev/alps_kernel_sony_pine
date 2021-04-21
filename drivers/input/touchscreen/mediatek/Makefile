@@ -24,3 +24,12 @@ obj-$(CONFIG_TOUCHSCREEN_MTK_FT5X0X)	+=  ft5x0x/
 obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_3320_50) +=  synaptics_3320_50/
 obj-$(CONFIG_TOUCHSCREEN_MTK_GT9271TB_HOTKNOT) +=  GT9271TB_hotknot/
 obj-$(CONFIG_TOUCHSCREEN_UNIFIED_DRIVER_4)	+=  unified_driver_4/
+# [Arima_8100][bozhi_lin] FocalTech ft3427 touch driver porting 20160920 begin
+obj-$(CONFIG_TOUCHSCREEN_FT3427) +=  ft3427/
+# [Arima_8100][bozhi_lin] 20160920 end
+# [Arima_8100][bozhi_lin] FocalTech ft3427 touch driver porting 20161019 begin
+obj-$(CONFIG_TOUCHSCREEN_MTK_FT3X27)	+=  ft3x27/
+# [Arima_8100][bozhi_lin] 20161019 end
+# [Arima_8100][bozhi_lin] Novatek nt11206 touch driver porting 20170222 begin
+obj-$(CONFIG_TOUCHSCREEN_MTK_NT11206)	+=  NT11206/
+# [Arima_8100][bozhi_lin] 20170222 end

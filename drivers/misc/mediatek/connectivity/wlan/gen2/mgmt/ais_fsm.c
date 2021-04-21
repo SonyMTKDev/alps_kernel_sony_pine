@@ -167,10 +167,6 @@ VOID aisInitializeConnectionSettings(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T p
 
 	prConnSettings->fgIsAdHocQoSEnable = FALSE;
 
-#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
-		prConnSettings->fgSecModeChangeStartTimer = FALSE;
-#endif
-
 	prConnSettings->eDesiredPhyConfig = PHY_CONFIG_802_11ABGN;
 
 	/* Set default bandwidth modes */
@@ -261,11 +257,6 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 	cnmTimerInitTimer(prAdapter,
 			  &prAisFsmInfo->rDeauthDoneTimer,
 			  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventDeauthTimeout, (ULONG) NULL);
-#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
-		cnmTimerInitTimer(prAdapter,
-				  &prAisFsmInfo->rSecModeChangeTimer,
-				  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventSecModeChangeTimeout, (ULONG) NULL);
-#endif
 
 	cnmTimerInitTimer(prAdapter,
 				  &prAisFsmInfo->rWaitOkcPMKTimer,
@@ -1099,6 +1090,8 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 				if (prAisFsmInfo->ucConnTrialCount > AIS_ROAMING_CONNECTION_TRIAL_LIMIT) {
 #if CFG_SUPPORT_ROAMING
+					DBGLOG(AIS, STATE,
+						"Roaming retry count :%d fail!\n", prAisFsmInfo->ucConnTrialCount);
 					roamingFsmRunEventFail(prAdapter, ROAMING_FAIL_REASON_CONNLIMIT);
 #endif /* CFG_SUPPORT_ROAMING */
 					/* reset retry count */
@@ -2421,8 +2414,6 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 						ASSERT(prBssDesc);
 						ASSERT(prBssDesc->fgIsConnecting);
 						*/
-						aisFsmStateAbort(prAdapter,
-							DISCONNECT_REASON_CODE_DEAUTHENTICATED, FALSE);
 						break;
 					}
 					/* ASSERT(prBssDesc); */
@@ -2450,7 +2441,18 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 					if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 #if CFG_SUPPORT_ROAMING
+#if CFG_SUPPORT_ROAMING_RETRY
+						/*Under roamming case : After candidate BSS joined fail.*/
+						/*STA will re-try other BSS.*/
+						DBGLOG(AIS, INFO,
+							"Under roamming %pM join fail and STA will re-try other AP\n",
+						prBssDesc->aucBSSID);
+						prBssDesc->fgIsRoamFail = TRUE;
+
+						eNextState = AIS_STATE_COLLECT_ESS_INFO;
+#else
 						eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
+#endif /* CFG_SUPPORT_ROAMING_RETRY */
 #endif /* CFG_SUPPORT_ROAMING */
 #if CFG_SUPPORT_RN
 					} else if (prAisBssInfo->fgDisConnReassoc == TRUE) {
@@ -2960,7 +2962,6 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 {
 	P_BSS_INFO_T prAisBssInfo;
 	P_CONNECTION_SETTINGS_T prConnSettings;
-	P_SCAN_INFO_T prScanInfo;
 	BOOLEAN fgFound = TRUE;
 
 	/* firstly, check if we have started postpone indication.
@@ -2971,16 +2972,9 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 	/* if we're in	req channel/join/search state, don't report disconnect. */
 	if (prAisFsmInfo->eCurrentState == AIS_STATE_JOIN ||
 		prAisFsmInfo->eCurrentState == AIS_STATE_SEARCH ||
-		prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN ||
-		prAisFsmInfo->eCurrentState == AIS_STATE_COLLECT_ESS_INFO) {
+		prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN) {
 		DBGLOG(AIS, INFO, "CurrentState: %d, don't report disconnect\n",
 				   prAisFsmInfo->eCurrentState);
-		return;
-	}
-
-	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-	if (prScanInfo->eCurrentState == SCAN_STATE_SCANNING) {
-		DBGLOG(AIS, INFO, "SCANNING, don't report disconnect\n");
 		return;
 	}
 
@@ -3819,13 +3813,6 @@ VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 {
 	aisDeauthXmitComplete(prAdapter, NULL, TX_RESULT_LIFE_TIMEOUT);
 }
-#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
-VOID aisFsmRunEventSecModeChangeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
-{
-	DBGLOG(AIS, INFO, "Beacon security mode change timeout, trigger disconnect!\n");
-	aisBssSecurityChanged(prAdapter);
-}
-#endif
 
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 /*----------------------------------------------------------------------------*/
@@ -5011,7 +4998,7 @@ aisQueryBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 		return prBssDesc->prBlack;
 
 	LINK_FOR_EACH_ENTRY(prEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
-		if (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry->aucBSSID) &&
+		if (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry) &&
 			EQUAL_SSID(prBssDesc->aucSSID, prBssDesc->ucSSIDLen,
 			prEntry->aucSSID, prEntry->ucSSIDLen)) {
 			prBssDesc->prBlack = prEntry;
@@ -5056,7 +5043,7 @@ static VOID aisRemoveDisappearedBlacklist(P_ADAPTER_T prAdapter)
 	LINK_FOR_EACH_ENTRY_SAFE(prEntry, prNextEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
 		fgDisappeared = TRUE;
 		LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
-			if (prBssDesc->prBlack == prEntry || (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry->aucBSSID) &&
+			if (prBssDesc->prBlack == prEntry || (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry) &&
 				EQUAL_SSID(prBssDesc->aucSSID, prBssDesc->ucSSIDLen,
 				prEntry->aucSSID, prEntry->ucSSIDLen))) {
 				fgDisappeared = FALSE;

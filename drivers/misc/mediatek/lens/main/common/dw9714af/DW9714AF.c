@@ -46,7 +46,11 @@ static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 
-
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu S
+//norman@20161116 for noise start
+#define Slew_Rate_Control 1
+//norman@20161116 for noise end
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu E
 static int s4AF_ReadReg(unsigned short *a_pu2Result)
 {
 	int i4RetValue = 0;
@@ -87,7 +91,32 @@ static int s4AF_WriteReg(u16 a_u2Data)
 
 	return 0;
 }
-
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu S
+static void DW9714AF_init_drv(void)
+{
+	
+	char puSendCmd0[2] = {0xec,0xa3};
+	char puSendCmd1[2] = {0xa1,0x0E};
+	char puSendCmd2[2] = {0xf2,0x90};
+	char puSendCmd3[2] = {0xdc,0x51};
+	
+	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;	
+	
+    i2c_master_send(g_pstAF_I2Cclient, puSendCmd0, 2);
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd1, 2);
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
+	
+	s4AF_WriteReg(0);
+	
+//	s4AF_WriteReg(0xECA3);//Ringing Setting ON
+//	s4AF_WriteReg(0xA10E);//DLC MCKL setting
+//	s4AF_WriteReg(0xF290);//T_SRC setting
+//	s4AF_WriteReg(0xDC51);
+//	s4AF_WriteReg(0);
+}
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu E
 static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 {
 	stAF_MotorInfo stMotorInfo;
@@ -121,7 +150,9 @@ static inline int moveAF(unsigned long a_u4Position)
 
 	if (*g_pAF_Opened == 1) {
 		unsigned short InitPos;
-
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu S
+		DW9714AF_init_drv();
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu E
 		ret = s4AF_ReadReg(&InitPos);
 
 		if (ret == 0) {
@@ -209,7 +240,16 @@ long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned l
 
 	return i4RetValue;
 }
-
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu S
+//norman@20161116 for noise start
+/*
+#define BEGIN_STEPS 400
+#define END_STEPS 50
+#define JUMP_STEPS 20
+#define STEP_PERIOD_MS 13
+*/
+//norman@20161116 for noise end	
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu E
 /* Main jobs: */
 /* 1.Deallocate anything that "open" allocated in private_data. */
 /* 2.Shut down the device on last close. */
@@ -217,11 +257,63 @@ long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned l
 /* Q1 : Try release multiple times. */
 int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
+	char puSendCmd0[2] = {0x80,0x00}; /* Power down mode */
 	LOG_INF("Start\n");
 
 	if (*g_pAF_Opened == 2) {
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu S
+//norman@20161122 for noise start
+#if Slew_Rate_Control
+	if(g_u4CurrPosition > 500)
+	{	
+		s4AF_WriteReg(500);
+		msleep(15);
+	}		
+	if(g_u4CurrPosition > 400)
+	{		
+		s4AF_WriteReg(400);
+		msleep(15);
+	}
+	if(g_u4CurrPosition > 350)
+	{		
+	  s4AF_WriteReg(350);
+		msleep(15);
+	}
+	if(g_u4CurrPosition > 300)
+	{		
+		s4AF_WriteReg(300);
+		msleep(15);
+	}
+	if(g_u4CurrPosition > 250)
+	{		
+		s4AF_WriteReg(250);
+		msleep(15);
+	}		
+	if(g_u4CurrPosition > 200)
+	{	
+		s4AF_WriteReg(200);
+		msleep(15);
+		}
+	if(g_u4CurrPosition > 100)
+	{	
+		s4AF_WriteReg(100);
+		msleep(15);
+		}
+#else
+                s4AF_WriteReg(200);
+		msleep(20);
+		s4AF_WriteReg(100);
+		msleep(20);
+#endif
 		LOG_INF("Wait\n");
-		s4AF_WriteReg(0x80); /* Power down mode */
+//norman@20161122 for noise end				
+
+		// s4AF_WriteReg(0x80); /* Power down mode */
+	    g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+	    g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;	
+	
+        i2c_master_send(g_pstAF_I2Cclient, puSendCmd0, 2);
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu E
 	}
 
 	if (*g_pAF_Opened) {

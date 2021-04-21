@@ -60,6 +60,10 @@
 #define CREATE_TRACE_POINTS
 #include "modem_cldma_events.h"
 #endif
+
+//by major, for apsbp config  
+#include <linux/bootapsbp.h>
+
 static unsigned int trace_sample_time = 200000000;
 static int md_cd_ccif_send(struct ccci_modem *md, int channel_id);
 static int md_cd_late_init(struct ccci_modem *md);
@@ -110,6 +114,16 @@ static const unsigned char high_priority_queue_mask;
 
 #define IS_NET_QUE(md, qno) \
 	((md->is_in_ee_dump == 0) && ((1<<qno) & NET_RX_QUEUE_MASK))
+
+#if defined(CONFIG_SONY_DBGCONTROL)
+//add this to trigger modem crash.
+static struct ccci_modem *local_md = 0;
+void dbgcontrol_assert_modem(void)
+{
+	if (local_md)
+		local_md->ops->force_assert(local_md, CCIF_INTERRUPT);
+}
+#endif
 
 static inline void cldma_tgpd_set_debug_id(struct cldma_tgpd *tgpd, unsigned int debug_id)
 {
@@ -2916,12 +2930,48 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int tx_ch,
 	struct ccci_header *ccci_h;
 	struct ap_query_md_feature *ap_rt_data;
 	int ret;
-
+    int send_sbp_flag = 0;  //by major
+	unsigned int sbp_code = md->sbp_code;
+	
+	//added by major, for debug
+       CCCI_NOTICE_MSG(md->index, KERN, "md_cd_send_runtime_data_v2 sbp_code %u\n", md->sbp_code);
 	skb = ccci_alloc_skb(packet_size, skb_from_pool, 1);
 	if (!skb)
 		return -CCCI_ERR_ALLOCATE_MEMORY_FAIL;
 	ccci_h = (struct ccci_header *)skb->data;
 	ap_rt_data = (struct ap_query_md_feature *)(skb->data + sizeof(struct ccci_header));
+
+	//by major, fix issue about sbp nvram config not update after userdata is NOT cleared
+        {
+			
+		{  //sbp not setted, then to get it from proc
+			unsigned int apsbp_id = mdbootreadsbp();  //return > 1000, means not setted, in fact it is 0xFFFF FFFF
+			
+			CCCI_INF_MSG(md->index, TAG, "[cldma]v2 md=%d, apsbp_id=%u got.  sbp_code=%u\n", md->index , apsbp_id,sbp_code);
+			
+			if(apsbp_id < 1000)  //it is setted
+			{
+			      CCCI_INF_MSG(md->index, TAG, "v2 CDF sbp  got!!\n");
+			      send_sbp_flag = 1;
+
+			      if(sbp_code != apsbp_id)
+			      {
+			           sbp_code = apsbp_id;
+					   md->sbp_code = sbp_code; //by major, update the value
+			           CCCI_ERR_MSG(md->index, TAG, "v2 sbp  changed...sbp_code:%u\n" , apsbp_id);
+			      }
+			}
+			else
+			{
+			     CCCI_INF_MSG(md->index, TAG, "CDF sbp  NOT setted!!\n");
+			}
+
+		}
+	}
+
+
+    //added by major, for debug
+	CCCI_NOTICE_MSG(md->index, KERN, "new api for sending rt data,01 sbp_code %u\n", md->sbp_code);
 
 	ccci_set_ap_region_protection(md);
 	/*header */
@@ -2958,15 +3008,21 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int tx_ch, un
 	unsigned int c2k_flags = 0;
 #endif
 
+    int send_sbp_flag = 0;  //by major
+	unsigned int sbp_code = md->sbp_code;
+
 #ifdef FEATURE_MD_GET_CLIB_TIME
 	struct timeval t;
 #endif
-
+  CCCI_NOTICE_MSG(md->index, KERN, "md_cd_send_runtime_data   090\n");
 	if (md->runtime_version == AP_MD_HS_V2) {
+  CCCI_INF_MSG(md->index, TAG, "md_cd_send_runtime_data   011\n");   //by major, for test
+  CCCI_NOTICE_MSG(md->index, KERN, "md_cd_send_runtime_data 011\n");
 		ret = md_cd_send_runtime_data_v2(md, tx_ch, txqno, skb_from_pool);
 		return ret;
 	}
-
+  CCCI_INF_MSG(md->index, TAG, "md_cd_send_runtime_data   002\n");   //by major, for test
+  CCCI_NOTICE_MSG(md->index, KERN, "md_cd_send_runtime_data 0454\n");
 	snprintf(str, sizeof(str), "%s", AP_PLATFORM_INFO);
 	skb = ccci_alloc_skb(packet_size, skb_from_pool, 1);
 	if (!skb)
@@ -3041,6 +3097,34 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int tx_ch, un
 	get_random_bytes(&random_seed, sizeof(int));
 	runtime->feature_2_val[0] = random_seed;
 	runtime->support_mask |= (FEATURE_SUPPORT << (MISC_RAND_SEED * 2));
+
+	//by major, fix issue about sbp nvram config not update after userdata is cleared
+        {
+			
+		{  //sbp not setted, then to get it from proc
+			unsigned int apsbp_id = mdbootreadsbp();  //return > 1000, means not setted, in fact it is 0xFFFF FFFF
+			
+			CCCI_INF_MSG(md->index, TAG, "[cldma]md=%d, apsbp_id=%u got.  sbp_code=%u\n", md->index , apsbp_id,sbp_code);
+			
+			if(apsbp_id < 1000)  //it is setted
+			{
+			      CCCI_INF_MSG(md->index, TAG, "CDF sbp  got!!\n");
+			      send_sbp_flag = 1;
+
+			      if(sbp_code != apsbp_id)
+			      {
+			           sbp_code = apsbp_id;
+					   md->sbp_code = sbp_code; //by major, update the value
+			           CCCI_ERR_MSG(md->index, TAG, "sbp  changed...sbp_code:%u\n" , apsbp_id);
+			      }
+			}
+			else
+			{
+			     CCCI_INF_MSG(md->index, TAG, "CDF sbp  NOT setted!!\n");
+			}
+
+		}
+	}
 	/* SBP + WM_ID */
 	runtime->support_mask |= (FEATURE_SUPPORT << (MISC_MD_SBP_SETTING * 2));
 	runtime->feature_4_val[0] = md->sbp_code;
@@ -3787,6 +3871,9 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 #endif
 
 	}
+#endif
+#if defined(CONFIG_SONY_DBGCONTROL)
+	local_md = md;
 #endif
 	return 0;
 }

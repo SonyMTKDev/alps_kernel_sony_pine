@@ -242,6 +242,9 @@ config ARM64_ERRATUM_855873
 
 	  If unsure, say Y.
 
+config SONY_S1_SUPPORT
+	def_bool y
+
 source "init/Kconfig"
 
 source "kernel/Kconfig.freezer"

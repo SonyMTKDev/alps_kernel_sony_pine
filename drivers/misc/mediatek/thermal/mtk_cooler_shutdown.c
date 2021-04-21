@@ -212,16 +212,18 @@ static const struct file_operations _cl_sd_debouncet_fops = {
 	.release = single_release,
 };
 
-static int _mtk_cl_sd_send_signal(void)
+//<--[SM31][PSM][JasonHsing] Porting shutdown thermal alert for improve RCA logs 20161117 BEGIN --
+static int _mtk_cl_sd_send_signal(int level)
 {
 	int ret = 0;
+	int thro = level;
 
 	if (tm_input_pid == 0) {
 		mtk_cooler_shutdown_dprintk("%s pid is empty\n", __func__);
 		ret = -1;
 	}
 
-	mtk_cooler_shutdown_dprintk("%s pid is %d, %d\n", __func__, tm_pid, tm_input_pid);
+	mtk_cooler_shutdown_dprintk("[%s]pid is %d, %d, %d\n", __func__, tm_pid, tm_input_pid, thro);
 
 	if (ret == 0 && tm_input_pid != tm_pid) {
 		tm_pid = tm_input_pid;
@@ -233,7 +235,7 @@ static int _mtk_cl_sd_send_signal(void)
 
 		info.si_signo = SIGIO;
 		info.si_errno = 0;
-		info.si_code = 1;
+		info.si_code = thro;
 		info.si_addr = NULL;
 		ret = send_sig_info(SIGIO, &info, pg_task);
 	}
@@ -243,6 +245,7 @@ static int _mtk_cl_sd_send_signal(void)
 
 	return ret;
 }
+//-->[SM31][PSM][JasonHsing] Porting shutdown thermal alert for improve RCA logs 20161117 END --
 
 #endif
 
@@ -252,18 +255,68 @@ static int mtk_cl_shutdown_get_max_state(struct thermal_cooling_device *cdev, un
 	/* mtk_cooler_shutdown_dprintk("mtk_cl_shutdown_get_max_state() %s %d\n", cdev->type, *state); */
 	return 0;
 }
-
+//<--[SM31][PSM][JasonHsing] Porting reset thermal alert for improve RCA logs 20161209 BEGIN --
+unsigned int time_count = 0;
+bool alert_flag = 0;
 static int mtk_cl_shutdown_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
 	/* *state = *((unsigned long *)cdev->devdata); */
 	struct sd_state *cl_state = (struct sd_state *) cdev->devdata;
+	struct file *fp;
+	mm_segment_t fs;
+	loff_t pos;
+	char buffer[100]= {0};
 
 	if (state)
 		*state = cl_state->state;
 	/* mtk_cooler_shutdown_dprintk("mtk_cl_shutdown_get_cur_state() %s %d\n", cdev->type, *state); */
+	time_count++;
+	if(time_count == 300 && alert_flag == 0)
+	{
+		fp = filp_open("/data/dumpsys/sysrst.dat", O_RDWR, 0666);
+		if (IS_ERR(fp))
+		{
+			pr_debug("No sysrst.dat file\n");
+		}
+		else
+		{
+			pos = 0;
+			fs = get_fs();
+			set_fs(KERNEL_DS);
+			vfs_read(fp, buffer, sizeof(buffer), &pos);
+			pos = 0;
+			vfs_write(fp, "\0", sizeof("\0"), &pos);	
+			filp_close(fp, NULL);				
+			set_fs(fs);
+			pr_debug("vfs_read %s File\n", buffer);
+
+			if(strcmp(buffer, "mtktscpu-sysrst") == 0){
+				_mtk_cl_sd_send_signal(13);
+				pr_debug("Send signal for mtktscpu-sysrst\n");
+			}
+			else if(strcmp(buffer, "mtktspmic-sysrst") == 0){
+				_mtk_cl_sd_send_signal(14);
+				pr_debug("Send signal for mtktspmic-sysrst\n");
+			}
+			else if(strcmp(buffer, "mtktswmt-sysrst") == 0){
+				_mtk_cl_sd_send_signal(15);
+				pr_debug("Send signal for mtktswmt-sysrst\n");
+			}		
+			else if(strcmp(buffer, "mtktspa-sysrst") == 0){
+				_mtk_cl_sd_send_signal(16);
+				pr_debug("Send signal for mtktspa-sysrst\n");
+			}
+			else if(strcmp(buffer, "mtktsbattery-sysrst") == 0){
+				_mtk_cl_sd_send_signal(17);
+				pr_debug("Send signal for mtktsbattery-sysrst\n");
+			}
+		}	
+		alert_flag = 1;
+	}
+
 	return 0;
 }
-
+//-->[SM31][PSM][JasonHsing] Porting reset thermal alert for improve RCA logs 20161209 END --
 static int mtk_cl_shutdown_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
 	struct sd_state *cl_state = (struct sd_state *) cdev->devdata;
@@ -301,7 +354,23 @@ static int mtk_cl_shutdown_set_cur_state(struct thermal_cooling_device *cdev, un
 #if defined(MTK_COOLER_SHUTDOWN_SIGNAL)
 		if (0 == sd_happened) {	/* make this an edge trigger instead of level trigger */
 			/* send signal to target process */
-			_mtk_cl_sd_send_signal();
+//<--[SM31][PSM][JasonHsing] Porting shutdown thermal alert for improve RCA logs 20161117 BEGIN --
+			if(strcmp(cdev->type, "mtk-cl-shutdown00") == 0){
+				_mtk_cl_sd_send_signal(10);
+				mtk_cooler_shutdown_dprintk("mtk-cl-shutdown00;\n");
+			}
+			else if(strcmp(cdev->type, "mtk-cl-shutdown01") == 0){
+				_mtk_cl_sd_send_signal(11);
+				mtk_cooler_shutdown_dprintk("mtk-cl-shutdown01;\n");
+			}
+			else if(strcmp(cdev->type, "mtk-cl-shutdown02") == 0){
+				_mtk_cl_sd_send_signal(12);
+				mtk_cooler_shutdown_dprintk("mtk-cl-shutdown02;\n");
+			}
+			else{
+				_mtk_cl_sd_send_signal(1);	//unknown shutdown
+			}
+//-->[SM31][PSM][JasonHsing] Porting shutdown thermal alert for improve RCA logs 20161117 BEGIN --
 			sd_happened = 1;
 		}
 #endif

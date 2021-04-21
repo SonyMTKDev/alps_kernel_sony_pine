@@ -1790,12 +1790,13 @@ sg_start_req(Sg_request *srp, unsigned char *cmd)
 		return -EINVAL;
 
 	if (iov_count) {
-		int len, size = sizeof(struct sg_iovec) * iov_count;
-		struct iovec *iov;
+		struct iovec *iov = NULL;
 
-		iov = memdup_user(hp->dxferp, size);
-		if (IS_ERR(iov))
-			return PTR_ERR(iov);
+		res = import_iovec(rw, hp->dxferp, iov_count, 0, &iov, &i);
+		if (res < 0)
+			return res;
+
+		iov_iter_truncate(&i, hp->dxfer_len);
 
 		len = iov_length(iov, iov_count);
 		if (hp->dxfer_len < len) {

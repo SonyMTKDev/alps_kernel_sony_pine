@@ -128,3 +128,31 @@ struct vibrator_hw *mt_get_cust_vibrator_hw(void)
 	struct vibrator_hw *hw = get_cust_vibrator_dtsi();
 	return hw;
 }
+
+// [SM31][Vibrator][akenhsu] Add custom adjust voltage for fine tune 20161124 BEGIN
+ssize_t vib_vol_save(struct device *dev,struct device_attribute *attr, const char *buf, size_t count)
+{
+	u8 read_data;
+	VIB_DEBUG("BEGIN buf=%s\n", buf);
+
+	if (sscanf(buf, "%hhu", &read_data) != 1) {
+		VIB_DEBUG("Input value error\n");
+	}
+
+	pvib_cust->vib_vol = read_data > 7 ? 7 : read_data;
+	pmic_set_register_value(PMIC_RG_VIBR_VOSEL, pvib_cust->vib_vol);
+
+	VIB_DEBUG("END vib_vol=%d\n", pvib_cust->vib_vol);
+	return count;
+}
+ssize_t vib_vol_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int rc = 0;
+	VIB_DEBUG("BEGIN\n");
+
+	rc = scnprintf(buf, PAGE_SIZE, "%d\n", pvib_cust->vib_vol);
+
+	VIB_DEBUG("END vib_vol=%d, rc = %d", pvib_cust->vib_vol, rc);
+	return rc;
+}
+// [SM31][Vibrator][akenhsu] 20161124 END

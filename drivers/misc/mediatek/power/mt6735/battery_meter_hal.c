@@ -901,6 +901,18 @@ static signed int read_adc_v_bat_temp(void *data)
 	return STATUS_OK;
 }
 
+/*[Arima_8100][bozhi_lin] multi-id battery support implement 20161115 begin*/
+static signed int read_adc_v_bat_id(void *data)
+{
+	bm_print(BM_LOG_FULL,
+		 "[read_adc_v_bat_id] return PMIC_IMM_GetOneChannelValue(7,times,1);\n");
+	*(signed int *) (data) =
+	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_TSX, *(signed int *) (data), 1);
+
+	return STATUS_OK;
+}
+/*[Arima_8100][bozhi_lin] 20161115 end*/
+
 static signed int read_adc_v_charger(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
@@ -994,6 +1006,9 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_GET_BATTERY_PLUG_STATUS] = read_battery_plug_out_status;
 		bm_func[BATTERY_METER_CMD_GET_HW_FG_CAR_ACT] = fgauge_read_columb_accurate;
 		bm_func[BATTERY_METER_CMD_GET_IS_HW_OCV_READY] = read_is_hw_ocv_ready;
+/*[Arima_8100][bozhi_lin] multi-id battery support implement 20161115 begin*/
+		bm_func[BATTERY_METER_CMD_GET_ADC_V_BAT_ID] = read_adc_v_bat_id;
+/*[Arima_8100][bozhi_lin] 20161115 end*/
 	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {

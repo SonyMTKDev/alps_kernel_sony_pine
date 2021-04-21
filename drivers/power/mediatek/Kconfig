@@ -248,6 +248,15 @@ config STOP_CHARGING_IN_TAKLING
 	  This is to provide better user experience
 	  and safety option.
 
+config STOP_CHARGING_IN_DEMOAPP
+	bool "Hold charging in demo app"
+	default n
+	help
+	  Set Yes if charging needs to be disabled
+	  during demo app is launch.
+	  This is to provide better user experience
+	  and safety option.
+
 config CONFIG_DIS_CHECK_BATTERY
 	bool "No shutdown if battery is not detected"
 	default n
@@ -329,3 +338,9 @@ config MTK_BIF_SUPPORT
 	  smart battery.
 	  Set No to disable BIF feature of a
 	  smart battery.
+
+config CHARGING_SOFTCHARE3_0
+	bool "support soft charge 3.0"
+	default n
+	help
+	  Set Yes if charging needs to enable soft charge 3.0
