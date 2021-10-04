@@ -16,7 +16,10 @@
 #
 
 ifeq ($(findstring lego,$(ARCH_MTK_PROJECT)), )
-obj-y				+= leds_strobe.o
+# [SM31][Camera][akenhsu] Add Flash LED IC: lm3648tt 20161003 BEGIN
+# obj-y				+= leds_strobe.o
+obj-y				+= lm3648tt.o
+# [SM31][Camera][akenhsu] 20161003 END
 else
 CFILES := leds_strobe.o
 obj-m				+= flashlight_device.o
