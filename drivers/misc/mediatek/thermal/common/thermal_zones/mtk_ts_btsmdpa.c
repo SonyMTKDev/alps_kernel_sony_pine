@@ -81,6 +81,11 @@ static int polling_trip_temp2 = 20000;
 static int polling_factor1 = 5000;
 static int polling_factor2 = 10000;
 
+/*[Arima_8100][bozhi_lin] modify AUX_IN0 & AUX_IN1 adc table 20161007 begin*/
+static int auxadc_mv = 0;
+static int auxadc_temp = 0;
+/*[Arima_8100][bozhi_lin] 20161007 end*/
+
 #define MTKTS_BTSMDPA_SW_FILTER (0)
 #define MTKTS_BTSMDPA_TEMP_CRIT 60000	/* 60.000 degree Celsius */
 
@@ -125,7 +130,9 @@ typedef struct {
 static int g_RAP_pull_up_R = 390000;	/* 390K,pull up resister */
 static int g_TAP_over_critical_low = 4251000;	/* base on 100K NTC temp default value -40 deg */
 static int g_RAP_pull_up_voltage = 1800;	/* 1.8V ,pull up voltage */
-static int g_RAP_ntc_table = 6;	/* default is //NTCG104EF104F(100K) */
+/*[Arima_8100][bozhi_lin] modify AUX_IN0 & AUX_IN1 adc table 20161007 begin*/
+static int g_RAP_ntc_table = 7;	/* default is //NCP15WF104F03RC(100K) */
+/*[Arima_8100][bozhi_lin] 20161007 end*/
 static int g_RAP_ADC_channel = AUX_IN1_NTC;	/* default is 0 */
 #else
 static int g_RAP_pull_up_R = 39000;	/* 39K,pull up resister */
@@ -573,6 +580,10 @@ static int get_hw_btsmdpa_temp(void)
 	mtkts_btsmdpa_dprintk("APtery output mV = %d\n", ret);
 	output = mtk_ts_btsmdpa_volt_to_temp(ret);
 	mtkts_btsmdpa_dprintk("BTSMDPA output temperature = %d\n", output);
+/*[Arima_8100][bozhi_lin] modify AUX_IN0 & AUX_IN1 adc table 20161007 begin*/
+	auxadc_mv = ret;
+	auxadc_temp = output;
+/*[Arima_8100][bozhi_lin] 20161007 end*/
 	return output;
 }
 
@@ -797,6 +808,9 @@ static int mtkts_btsmdpa_read(struct seq_file *m, void *v)
 		g_bind0, g_bind1, g_bind2, g_bind3, g_bind4);
 	seq_printf(m, "cooldev5=%s,cooldev6=%s,cooldev7=%s,cooldev8=%s,cooldev9=%s,time_ms=%d\n",
 		g_bind5, g_bind6, g_bind7, g_bind8, g_bind9, interval * 1000);
+/*[Arima_8100][bozhi_lin] modify AUX_IN0 & AUX_IN1 adc table 20161007 begin*/
+	seq_printf(m, "(temp, mv) = ( %d, %d)\n", auxadc_temp, auxadc_mv);
+/*[Arima_8100][bozhi_lin] 20161007 end*/
 
 	return 0;
 }

@@ -44,6 +44,9 @@ endif
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
 obj-$(CONFIG_THERMAL) += mtk_ts_btsmdpa.o
+# [Arima_8100][bozhi_lin] add AUX_IN2 thermal_zone for debug 20161007 begin
+obj-$(CONFIG_THERMAL) += mtk_ts_btspmic.o
+# [Arima_8100][bozhi_lin] 20161007 end
 #obj-$(CONFIG_THERMAL) += mtk_ts_buck.o
 obj-$(CONFIG_THERMAL) += mtk_ts_cpu.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pa.o

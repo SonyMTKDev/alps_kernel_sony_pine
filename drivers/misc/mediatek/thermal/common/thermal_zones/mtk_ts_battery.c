@@ -381,8 +381,32 @@ static int tsbat_sysrst_get_cur_state(struct thermal_cooling_device *cdev, unsig
 
 static int tsbat_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
+//<--[SM31][PSM][JasonHsing] Porting reset thermal alert for improve RCA logs 20161202 BEGIN --
+		struct file *fp;
+		mm_segment_t fs;
+		loff_t pos;
+
 	cl_dev_sysrst_state = state;
 	if (cl_dev_sysrst_state == 1) {
+
+		fp = filp_open("/data/dumpsys/sysrst.dat", O_RDWR|O_CREAT, 0666);
+		if (IS_ERR(fp))
+		{
+			pr_debug("No sysrst.dat file\n");
+		}
+		else
+		{
+			pos = 0;
+			fs = get_fs();
+			set_fs(KERNEL_DS);
+			vfs_write(fp, cdev->type, sizeof(cdev->type), &pos);
+			filp_close(fp, NULL);
+			vfs_fsync(fp, 0);
+			set_fs(fs);
+			pr_debug("vfs_write %s File\n", cdev->type);
+		}
+		mdelay(5);
+//-->[SM31][PSM][JasonHsing] Porting reset thermal alert for improve RCA logs 20161202 END --
 		pr_debug("Power/battery_Thermal: reset, reset, reset!!!");
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 		pr_debug("*****************************************");
