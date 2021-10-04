@@ -15,6 +15,8 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hwmon/include
 
 obj-y	+= step_counter.o
+#[SM31][Sensors][JasonHsing] G-sensor bma422 driver porting 20161012 --
+obj-$(CONFIG_MTK_BMA4XYSTC)   +=  bma4xy_stc/
 
 ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
 obj-$(CONFIG_MTK_STEPSIGNHUB)		+=	stepsignhub/
