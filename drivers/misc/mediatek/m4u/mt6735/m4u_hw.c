@@ -251,11 +251,6 @@ int config_mau(M4U_MAU_STRUCT mau)
 	if (0 != m4u_id)
 		return -1;
 
-	if (mau.port < 0 || mau.port >= M4U_PORT_NR || larb == -1) {
-		M4UMSG("%s,unknown port %d\n", __func__, mau.port);
-		return -1;
-	}
-
 	for (i = 0; i < M4U0_MAU_NR; i++) {
 		if (0 != gM4u0_mau[i].Enabled) {
 			if (MVAStart >= gM4u0_mau[i].MVAStart && MVAEnd <= gM4u0_mau[i].MVAEnd) { /* no overlap */
@@ -1068,6 +1063,9 @@ int m4u_invalid_seq_range_by_id(int port, int seq_id)
 	M4U_RANGE_DES_T *pSeq = gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index)*m4u_slave_id;
 	int ret = 0;
 
+	if (m4u_base == 0)
+		return -1;
+
 	mutex_lock(&gM4u_seq_mutex);
 	{
 		pSeq[seq_id].Enabled = 0;
@@ -1196,17 +1194,21 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 
 int m4u_config_port(M4U_PORT_STRUCT *pM4uPort) /* native */
 {
-	M4U_PORT_ID PortID = (pM4uPort->ePortID);
-	int m4u_index = m4u_port_2_m4u_id(PortID);
-	int larb = m4u_port_2_larb_id(PortID);
+	int m4u_index;
+	M4U_PORT_ID PortID;
+	int larb;
 	int ret;
 #ifdef M4U_TEE_SERVICE_ENABLE
 	unsigned int larb_port, mmu_en = 0, sec_en = 0;
 #endif
-	if (pM4uPort->ePortID < 0 || pM4uPort->ePortID >= M4U_PORT_NR) {
-		M4UMSG("%s,unknown port %d\n", __func__, pM4uPort->ePortID);
+
+	if (pM4uPort->ePortID < 0 || pM4uPort->ePortID > M4U_PORT_UNKNOWN) {
+		M4UERR("port is unknown,error port is %d\n", pM4uPort->ePortID);
 		return -1;
 	}
+	PortID = (pM4uPort->ePortID);
+	m4u_index = m4u_port_2_m4u_id(PortID);
+	larb = m4u_port_2_larb_id(PortID);
 
 	_m4u_port_clock_toggle(m4u_index, larb, 1);
 
@@ -1358,11 +1360,15 @@ void m4u_get_perf_counter(int m4u_index, int m4u_slave_id, M4U_PERF_COUNT *pM4U_
 
 int m4u_monitor_start(int m4u_id)
 {
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
+	unsigned long m4u_base;
 
-	M4UINFO("====m4u_monitor_start: %d,m4u_base:0x%lx======\n", m4u_id, m4u_base);
-	if (m4u_base == 0)
+	if (m4u_id < 0) {
+		M4UERR("ERROR m4u id ,error id is %d\n", m4u_id);
 		return -1;
+	}
+	m4u_base = gM4UBaseAddr[m4u_id];
+
+	M4UINFO("====m4u_monitor_start: %d======\n", m4u_id);
 	/* clear GMC performance counter */
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_CTRL_REG,
 			F_MMU_CTRL_MONITOR_CLR(1), F_MMU_CTRL_MONITOR_CLR(1));
@@ -1384,11 +1390,13 @@ int m4u_monitor_stop(int m4u_id)
 {
 	M4U_PERF_COUNT cnt;
 	int m4u_index = m4u_id;
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	unsigned long m4u_base;
 
-	M4UINFO("====m4u_monitor_stop: %d,m4u_base:0x%lx======\n", m4u_id, m4u_base);
-	if (m4u_base == 0)
+	if (m4u_id < 0) {
+		M4UERR("ERROR m4u id ,error id is %d\n", m4u_id);
 		return -1;
+	}
+	m4u_base = gM4UBaseAddr[m4u_id];
 
 	/* disable GMC performance monitor */
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_CTRL_REG,
