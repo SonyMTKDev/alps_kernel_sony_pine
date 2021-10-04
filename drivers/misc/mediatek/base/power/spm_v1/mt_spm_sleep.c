@@ -1546,6 +1546,48 @@ int __attribute__ ((weak)) get_dlpt_imix_spm(void)
 }
 #endif
 
+//<2016/11/22-AlanChang, [S1]Support oemS feature.
+#ifdef CONFIG_SONY_S1_SUPPORT
+#include <linux/of.h>
+#include <mt-plat/mt_io.h>
+
+extern volatile unsigned long magic_val;
+extern void __iomem *magic_base;
+
+void write_magic(volatile unsigned long magic_write, int log_option)
+{
+	if (magic_base != 0)
+	{
+		writel(magic_write, IOMEM(magic_base + 0x834));
+
+		if( magic_write  == readl(IOMEM(magic_base + 0x834)))
+		{
+			if(log_option == 1)
+				spm_crit2("%lx write_magic success !!\n", magic_write);
+			else
+				printk("%lx write_magic success !!\n", magic_write);
+		}
+		else
+		{
+			if(log_option == 1)
+				spm_crit2("%lx write_magic failed !!\n", magic_write);
+			else
+				printk("%lx write_magic failed !!\n", magic_write);
+		}
+	}
+	else
+	{
+		if(log_option == 1)
+			spm_crit2("magic_base invalid !!\n");
+		else
+			printk("magic_base invalid !!\n");
+	}
+}
+
+EXPORT_SYMBOL(write_magic);
+#endif
+//>2016/11/22-AlanChang.
+
 wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 {
 	u32 sec = 2;
@@ -1702,6 +1744,12 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if SPM_AEE_RR_REC
 	aee_rr_rec_spm_suspend_val(aee_rr_curr_spm_suspend_val() | (1 << SPM_SUSPEND_LEAVE_WFI));
 #endif
+
+//<2016/11/22-AlanChang, [S1]Support oemS feature.
+#ifdef CONFIG_SONY_S1_SUPPORT
+	write_magic(magic_val, 1);
+#endif
+//>2016/11/22-AlanChang.
 
 	/* record last wakesta */
 	/* __spm_get_wakeup_status(&wakesta); */
