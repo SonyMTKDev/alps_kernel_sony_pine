@@ -172,10 +172,38 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_present_smb,
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_PROP_adjust_power,
+/*[Arima_8100][bozhi_lin] FP22589: Battery Swelling mitigation for retail demo units 20161027 begin*/
+#if defined(CONFIG_STOP_CHARGING_IN_DEMOAPP)
+	POWER_SUPPLY_PROP_enable_llk,
+#endif
+/*[Arima_8100][bozhi_lin] 20161027 end*/
+/*[Arima_8100][bozhi_lin] RID001582 - Soft charge 3.0 20161116 begin*/
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+	POWER_SUPPLY_PROP_sc3_40_init_time,
+	POWER_SUPPLY_PROP_sc3_40_charging_time,
+	POWER_SUPPLY_PROP_sc3_30_init_time,
+	POWER_SUPPLY_PROP_sc3_30_charging_time,
+	POWER_SUPPLY_PROP_sc3_20_init_time,
+	POWER_SUPPLY_PROP_sc3_20_charging_time,
+/*[Arima_8100][bozhi_lin] RID003588 Battery Health test in the Service Menu 20161124 begin*/
+	POWER_SUPPLY_PROP_sc3_fcc_mah_0,
+	POWER_SUPPLY_PROP_sc3_fcc_mah_1,
+	POWER_SUPPLY_PROP_sc3_fcc_mah_2,
+	POWER_SUPPLY_PROP_sc3_fcc_mah_3,
+	POWER_SUPPLY_PROP_sc3_fcc_mah_4,
+/*[Arima_8100][bozhi_lin] 20161124 end*/
+#endif
+/*[Arima_8100][bozhi_lin] 20161116 end*/
+#ifdef CONFIG_CHARGER_QNS
+	POWER_SUPPLY_PROP_MAX_CHARGE_CURRENT,
+#endif
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_PROP_MODEL_NAME,
 	POWER_SUPPLY_PROP_MANUFACTURER,
 	POWER_SUPPLY_PROP_SERIAL_NUMBER,
+#ifdef CONFIG_CHARGER_QNS
+	POWER_SUPPLY_PROP_BATTERY_TYPE,
+#endif
 };
 
 enum power_supply_type {
