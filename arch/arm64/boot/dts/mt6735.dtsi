@@ -1727,23 +1727,39 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt_soc_pcm_dl2";
 		};
 
+// [SM31][RGBLED][akenhsu] Porting KTD2037 LED control IC 20161003 BEGIN
+		rgb_ktd2037: rgb_ktd2037 {
+			compatible = "mediatek,ktd2037-platform";
+		};
+// [SM31][RGBLED][akenhsu] 20161003 END
+
 		touch: touch {
 			compatible = "mediatek,mt6735-touch";
 			vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;
 		};
-
+//<--[SM31][Sensors][JasonHsing] Hall sensor driver porting 20161004 BEGIN --
+		hall_1: hall_1@2 {
+			compatible = "mediatek,mt6735-hall_1";
+		};
+//-->[SM31][Sensors][JasonHsing] Hall sensor driver porting 20161004 END --
 		accdet: accdet {
 			compatible = "mediatek,mt6735-accdet";
 		};
-
-		nfc:nfc {
+/*[sm31][nfc][kent][16092801][begin]nfc driver porting*/
+		/*nfc:nfc {
 			compatible = "mediatek,nfc-gpio-v2";
 			gpio-ven = <4>;
 			gpio-rst = <3>;
 			gpio-eint = <1>;
 			gpio-irq = <2>;
+		};*/
+		 nfc:nfc {
+            		compatible = "mediatek,nfc-gpio-v2";
+            		ven-gpio = <11>;
+            		firm-gpio = <12>;
+            		irq-gpio = <7>;
 		};
-
+/*[sm31][nfc][kent][16092801][end]nfc driver porting*/
 		gps {
 			compatible = "mediatek,gps";
 		};
@@ -2953,6 +2969,45 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek, dsi_te_1-eint";
 			status = "disabled";
 		};
+/*[Arima_8100][bozhi_lin] rt1711 set USB_INT_N as gpio81 and fix stack error 20161117 begin*/
+/*[Arima_8100][bozhi_lin] RichTek rt1711 usb type c driver porting rev16 20161101 begin*/
+/*[Arima_8100][bozhi_lin] RichTek rt1711 usb type c driver porting 20161019 begin*/
+		rt1711: type_c_port0 {
+			rt-dual,supported_modes = <2>; /* 0: dfp/ufp, 1: dfp, 2: ufp */
+			rt-tcpc,name = "type_c_port0"; /* tcpc_device's name */
+			rt-tcpc,role_def = <0>; /* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
+			rt-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
+			rt-tcpc,notifier_supply_num = <1>; /* the number of notifier supply */
+/*[Arima_8100][bozhi_lin] rt1711 set USB_INT_N as gpio4 from gpio81 20170101 begin*/
+			rt1711,irq_gpio = <&pio 4 0x0>;
+/*[Arima_8100][bozhi_lin] 20170101 end*/
+/*[Arima_8100][bozhi_lin] dynamic check hw varient to set rt1711 IRQ 20170103 begin*/
+			rt1711,irq_gpio_under_sp = <&pio 81 0x0>;
+			rt1711,pcba_ver0 = <&pio 58 0x0>;
+			rt1711,pcba_ver1 = <&pio 57 0x0>;
+			rt1711,pcba_ver2 = <&pio 86 0x0>;
+/*[Arima_8100][bozhi_lin] 20170103 end*/
+		};
+/*[Arima_8100][bozhi_lin] 20161019 end*/
+/*[Arima_8100][bozhi_lin] 20161101 end*/
+/*[Arima_8100][bozhi_lin] 20161117 end*/
+/*[Arima_8100][bozhi_lin] dynamic check hw varient to set rt1711 IRQ 20170103 begin*/
+		type_c_port0_under_sp {
+			interrupt-parent = <&eintc>;
+			interrupts = <81 IRQ_TYPE_EDGE_FALLING>;
+			debounce = <81 0>;
+			status = "okay";
+		};
+/*[Arima_8100][bozhi_lin] 20170103 end*/
+
+/*[Arima_8100][bozhi_lin] RID003699 OVP warning message to end-user 20170320 begin*/
+		charging_ic_rt9458 {
+			interrupt-parent = <&eintc>;
+			interrupts = <3 IRQ_TYPE_EDGE_FALLING>;
+			debounce = <3 0>;
+			status = "okay";
+		};
+/*[Arima_8100][bozhi_lin] 20170320 end*/
 	};
 
 	vcorefs {
