@@ -31,7 +31,10 @@
 #include <linux/of.h>
 
 #include <mt-plat/mt_boot.h>
-
+//[SM31][RaymondLin]Add lcm_vendor information to distinguish LCM vendor -begin
+#include <mt-plat/mt_gpio.h>
+#define GPIO_LCM_ID_PIN 67
+//[SM31][RaymondLin]Add lcm_vendor information to distinguish LCM vendor -end
 unsigned int g_meta_com_type = META_UNKNOWN_COM;
 unsigned int g_meta_com_id = 0;
 unsigned int g_meta_uart_port = 0;
@@ -140,7 +143,37 @@ static ssize_t meta_uart_port_store(struct device_driver *driver, const char *bu
 
 DRIVER_ATTR(meta_uart_port_info, 0644, meta_uart_port_show, meta_uart_port_store);
 
+//[SM31][RaymondLin]Add lcm_vendor information to distinguish LCM vendor -begin
+static int proc_lcm_vendor_show(struct seq_file *m, void *v)
+{
+    int lcm_id=0;
 
+    lcm_id = mt_get_gpio_in(GPIO_LCM_ID_PIN);
+
+    if(lcm_id == 0)
+    {
+    	seq_printf(m, "Truly R6135 LCM");         
+    }
+    else
+    {
+    	seq_printf(m, "Inno NT35521S LCM");         
+    }
+
+    return 0;
+}
+
+static int proc_lcm_vendor_open(struct inode *inode, struct file *file)
+{
+    return single_open(file, proc_lcm_vendor_show, NULL);
+}
+
+static const struct file_operations proc_lcm_vendor_fops = { 
+    .open  = proc_lcm_vendor_open, 
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = single_release,
+};
+//[SM31][RaymondLin]Add lcm_vendor information to distinguish LCM vendor -end
 static int __init create_sysfs(void)
 {
 	int ret;
@@ -190,6 +223,9 @@ static int __init create_sysfs(void)
 			pr_warn("fail to create META UART PORT sysfs file\n");
 	}
 
+//[SM31][RaymondLin]Add lcm_vendor information to distinguish LCM vendor -begin
+    proc_create("lcm_vendor", 0, NULL, &proc_lcm_vendor_fops);
+//[SM31][RaymondLin]Add lcm_vendor information to distinguish LCM vendor -end
 	return 0;
 }
 
