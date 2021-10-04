@@ -31,6 +31,15 @@
 #define SHUTDOWN_SYSTEM_VOLTAGE		(3400)
 #endif
 
+/*[Arima_8100][bozhi_lin] RID001972 - Soft charge version 1.0 20161124 begin*/
+/*[Arima_8100][bozhi_lin] RID003588 Battery Health test in the Service Menu 20161124 begin*/
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+#define BATTERY_DESIGN_CAPACITY 2620
+#define BATTERY_DESIGN_CAPACITY_90_PERCENT (BATTERY_DESIGN_CAPACITY * 90 / 100)
+#endif
+/*[Arima_8100][bozhi_lin] 20161124 end*/
+/*[Arima_8100][bozhi_lin] 20161124 end*/
+
 /*****************************************************************************
  *  BATTERY TIMER
  ****************************************************************************/
@@ -38,6 +47,10 @@
 /* #define MAX_CHARGING_TIME                   8*60*60   // 8hr */
 /* #define MAX_CHARGING_TIME                   12*60*60  // 12hr */
 #define MAX_CHARGING_TIME                   (24*60*60)	/* 24hr */
+/*[Arima_8100][bozhi_lin] set AC timer to 6 hours and USB to 100 hours 20161101 begin*/
+#define AC_MAX_CHARGING_TIME                (6*60*60)	/* 6hr */
+#define USB_MAX_CHARGING_TIME               (100*60*60)	/* 100hr */
+/*[Arima_8100][bozhi_lin] 20161101 end*/
 
 #define MAX_POSTFULL_SAFETY_TIME		(1*30*60)/* 30mins */
 #define MAX_PreCC_CHARGING_TIME		(1*30*60)/* 0.5hr */
@@ -73,6 +86,11 @@
 #define  CHR_BATFULL                    (0x1004)
 #define  CHR_ERROR                      (0x1005)
 #define  CHR_HOLD						(0x1006)
+/*[Arima_8100][bozhi_lin] FP22589: Battery Swelling mitigation for retail demo units 20161027 begin*/
+#if defined(CONFIG_STOP_CHARGING_IN_DEMOAPP)
+#define  CHR_HOLD_DEMO					(0x1007)
+#endif
+/*[Arima_8100][bozhi_lin] 20161027 end*/
 
 /*****************************************************************************
  *  CallState
@@ -125,6 +143,30 @@ typedef enum {
     -10~0     200mA         200mA             4V                  3.9V                <-10(Down) >6(Up)
     <-10      no charging current,              X                    X                    >-10(Up)
 ****************************************************************************/
+/*[Arima_8100][bozhi_lin] Charging fine tune JEITA battery temperature threshold 20161104 begin*/
+/*[Arima_8100][bozhi_lin] Charging enable JEITA battery temperature check 20161028 begin*/
+#if defined(JEITA_SONY_CONFIG)
+typedef enum {
+	TEMP_BELOW_POS_5 = 0,
+	TEMP_POS_5_TO_POS_10,
+	TEMP_POS_10_TO_POS_45,
+	TEMP_POS_45_TO_POS_55,
+	TEMP_ABOVE_POS_55
+} temp_state_enum;
+
+#define TEMP_POS_55_THRESHOLD  55
+#define TEMP_POS_55_THRES_MINUS_X_DEGREE 54
+
+#define TEMP_POS_45_THRESHOLD  45
+#define TEMP_POS_45_THRES_MINUS_X_DEGREE 44
+
+#define TEMP_POS_10_THRESHOLD  10
+#define TEMP_POS_10_THRES_PLUS_X_DEGREE 11
+
+#define TEMP_POS_5_THRESHOLD  5
+#define TEMP_POS_5_THRES_PLUS_X_DEGREE 6
+
+#else
 typedef enum {
 	TEMP_BELOW_NEG_10 = 0,
 	TEMP_NEG_10_TO_POS_0,
@@ -156,6 +198,9 @@ typedef enum {
 #else
 #define TEMP_NEG_10_THRESHOLD  0
 #define TEMP_NEG_10_THRES_PLUS_X_DEGREE  0
+#endif
+/*[Arima_8100][bozhi_lin] 20161028 end*/
+/*[Arima_8100][bozhi_lin] 20161104 end*/
 #endif
 
 /*****************************************************************************
@@ -197,7 +242,13 @@ typedef struct {
 	kal_bool bat_full;
 	signed int bat_charging_state;
 	unsigned int bat_vol;
+/*[Arima_8100][bozhi_lin] charging maintenance implement 20161102 begin*/
+#if defined(CHARGING_MAINTAIN)
+	kal_bool bat_in_maintain_state;
+#else
 	kal_bool bat_in_recharging_state;
+#endif
+/*[Arima_8100][bozhi_lin] 20161102 end*/
 	unsigned int Vsense;
 	kal_bool charger_exist;
 	unsigned int charger_vol;
@@ -212,19 +263,56 @@ typedef struct {
 	unsigned int CC_charging_time;
 	unsigned int TOPOFF_charging_time;
 	unsigned int POSTFULL_charging_time;
+/*[Arima_8100][bozhi_lin] charging maintenance implement 20161102 begin*/
+#if defined(CHARGING_MAINTAIN)
+	unsigned int MAINTAIN_charging_time;
+#endif
+/*[Arima_8100][bozhi_lin] 20161102 end*/
+/*[Arima_8100][bozhi_lin] RID001582 - Soft charge 3.0 20161116 begin*/
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+	unsigned int SOFTCHARE3_0_total_charging_time;
+	unsigned int SOFTCHARE3_0_40_init_time;
+	unsigned int SOFTCHARE3_0_40_charging_time;
+	unsigned int SOFTCHARE3_0_30_init_time;
+	unsigned int SOFTCHARE3_0_30_charging_time;
+	unsigned int SOFTCHARE3_0_20_init_time;
+	unsigned int SOFTCHARE3_0_20_charging_time;
+/*[Arima_8100][bozhi_lin] RID003588 Battery Health test in the Service Menu 20161130 begin*/
+/*[Arima_8100][bozhi_lin] RID003588 Battery Health test in the Service Menu 20161124 begin*/
+	signed int SOFTCHARE3_0_average_fcc_mah;
+	signed int SOFTCHARE3_0_fcc_mah[5];
+	signed int SOFTCHARE3_0_aged_fcc_mah[5];
+/*[Arima_8100][bozhi_lin] 20161124 end*/
+/*[Arima_8100][bozhi_lin] 20161130 end*/
+#endif
+/*[Arima_8100][bozhi_lin] 20161116 end*/
 	unsigned int charger_type;
 	signed int SOC;
 	signed int UI_SOC;
 	signed int UI_SOC2;
+/*[Arima_8100][bozhi_lin] add fake soc for test purpose 20170103 begin*/
+	signed int FAKE_UI_SOC;
+/*[Arima_8100][bozhi_lin] 20170103 end*/
 	unsigned int nPercent_ZCV;
 	unsigned int nPrecent_UI_SOC_check_point;
 	unsigned int ZCV;
+/*[Arima_8100][bozhi_lin] set AC timer to 6 hours and USB to 100 hours 20161101 begin*/
+	unsigned int charging_timer;
+/*[Arima_8100][bozhi_lin] 20161101 end*/
+/*[Arima_8100][bozhi_lin] support type-c 1.5A and 3A pd charger and set current to 1.5A 20170720 begin*/
+	unsigned int PD_CHARGER_CHECK_count;
+/*[Arima_8100][bozhi_lin] 20170720 end*/
 } PMU_ChargerStruct;
 
 struct battery_custom_data {
 	/* mt_charging.h */
 	/* stop charging while in talking mode */
 	int stop_charging_in_takling;
+/*[Arima_8100][bozhi_lin] FP22589: Battery Swelling mitigation for retail demo units 20161027 begin*/
+#if defined(CONFIG_STOP_CHARGING_IN_DEMOAPP)
+	int stop_charging_in_demoapp;
+#endif
+/*[Arima_8100][bozhi_lin] 20161027 end*/
 	int talking_recharge_voltage;
 	int talking_sync_time;
 
