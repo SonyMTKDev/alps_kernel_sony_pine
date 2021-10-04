@@ -25,7 +25,7 @@ void mt_gpio_pin_decrypt(unsigned long *cipher)
 	/* just for debug, find out who used pin number directly */
 	if ((*cipher & (0x80000000)) == 0) {
 		GPIOERR("GPIO%u HARDCODE warning!!!\n", (unsigned int)(*cipher));
-		dump_stack();
+		// dump_stack(); // [SM31][akenhsu] Disable callstack dump while controlling hardcode GPIO 20170110
 		/* return; */
 	}
 
