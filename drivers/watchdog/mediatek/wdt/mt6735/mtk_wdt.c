@@ -340,7 +340,9 @@ void wdt_arch_reset(char mode)
 		pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id);
 	}
 #endif
-	/* Watchdog Rest */
+    pr_alert("MTK_WDT_STATUS:0x%x\n", __raw_readl(MTK_WDT_STATUS)); // add debug log from MTK for HWT issue.
+
+    /* Watchdog Rest */
 	mt_reg_sync_writel(MTK_WDT_RESTART_KEY, MTK_WDT_RESTART);
 	wdt_mode_val = __raw_readl(MTK_WDT_MODE);
 	/* clear autorestart bit: autoretart: 1, bypass power key, 0: not bypass power key */
@@ -615,6 +617,19 @@ static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
 }
 #endif /* CONFIG_FIQ_GLUE */
 
+//<2016/11/22-AlanChang, [S1]Support oemS feature.
+#ifdef CONFIG_SONY_S1_SUPPORT
+#include <linux/io.h>
+#include <mt-plat/mt_io.h>
+
+volatile unsigned long magic_val = 0;
+void __iomem *magic_base=0;
+
+EXPORT_SYMBOL(magic_val);
+EXPORT_SYMBOL(magic_base);
+#endif
+//>2016/11/22-AlanChang.
+
 /*
  * Device interface
  */
@@ -623,6 +638,27 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	int ret = 0;
 	unsigned int interval_val;
 	unsigned int nonrst;
+
+//<2016/11/22-AlanChang, [S1]Support oemS feature.
+#ifdef CONFIG_SONY_S1_SUPPORT
+	struct device_node *iram_node;
+
+	iram_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-scpsys");
+
+	if(!magic_base)
+	{
+		magic_base = of_iomap(iram_node, 0);
+		if (!magic_base) {
+			printk("iomap failed\n");
+		}
+		printk("base: 0x%lx\n", (unsigned long)magic_base);
+	}
+
+	magic_val = readl(IOMEM(magic_base + 0x834));
+
+	printk("magic addr= 0x%lx, magic val = 0x%lx\n", (unsigned long)magic_base+0x834, magic_val);
+#endif
+//>2016/11/22-AlanChang.
 
 	pr_err("******** MTK WDT driver probe!! ********\n");
 #ifdef CONFIG_OF

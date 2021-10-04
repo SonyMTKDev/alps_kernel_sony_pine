@@ -21,6 +21,37 @@
 #include <mt-plat/mt_reboot.h>
 #include <mt-plat/mtk_rtc.h>
 
+//Bacal, 20161015, reboot for oemF start
+#include <linux/slab.h>
+#include <linux/vmalloc.h>
+#include<mach/mt_rtc_hw.h>
+#include<mach/mtk_rtc_hal.h>
+
+extern u16 rtc_read(u16 addr);
+extern void rtc_write(u16 addr, u16 data);
+extern void rtc_write_trigger(void);
+//Bacal, 20161015, reboot for oemF end
+
+//<2016/11/22-AlanChang, [S1]Support oemS feature.
+#ifdef CONFIG_SONY_S1_SUPPORT
+#define S1_WARMBOOT_MAGIC_VAL (0xBEEF)
+#define S1_WARMBOOT_NORMAL    (0x7651)
+#define S1_WARMBOOT_S1        (0x6F53)
+#define S1_WARMBOOT_FB        (0x7700)
+#define S1_WARMBOOT_NONE      (0x0000)
+#define S1_WARMBOOT_CLEAR     (0xABAD)
+#define S1_WARMBOOT_TOOL      (0x7001)
+#define S1_WARMBOOT_RECOVERY  (0x7711)
+#define S1_WARMBOOT_FOTA      (0x6F46)
+
+extern void write_magic(volatile unsigned long magic_write, int log_option);
+#endif
+//>2016/11/22-AlanChang.
+
+//<2016/08/25-JackHu, porting oem-50 command
+#define S1_WARMBOOT_FOTA_CACHE (0x6F50)
+//<2016/08/25-JackHu
+
 static int wd_cpu_hot_plug_on_notify(int cpu);
 static int wd_cpu_hot_plug_off_notify(int cpu);
 static int spmwdt_mode_config(WD_REQ_CTL en, WD_REQ_MODE mode);
@@ -577,6 +608,52 @@ int get_wd_api(struct wd_api **obj)
 }
 
 #ifndef CONFIG_MEDIATEK_WATCHDOG
+//Bacal, 20161015, reboot for oemF start
+static uint32_t *warmboot_addr_p;
+
+static void *remap_lowmem(phys_addr_t start, phys_addr_t size)
+{	
+        struct page **pages;	
+        phys_addr_t page_start;	
+        unsigned int page_count;	
+        pgprot_t prot;	
+        unsigned int i;
+        void *vaddr;	
+		
+        page_start = start - offset_in_page(start);	
+        page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);	
+        prot = pgprot_noncached(PAGE_KERNEL);	
+        pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);	
+        if (!pages) 
+        {       
+            pr_err("%s: Failed to allocate array for %u pages\n", __func__, page_count);        
+            return NULL;    
+        }  
+        for (i = 0; i < page_count; i++)
+        {      
+            phys_addr_t addr = page_start + i * PAGE_SIZE;      
+            pages[i] = pfn_to_page(addr >> PAGE_SHIFT);
+        }   
+        vaddr = vmap(pages, page_count, VM_MAP, prot);
+        kfree(pages);
+        if (!vaddr) 
+        {       
+            pr_err("%s: Failed to map %u pages\n", __func__, page_count);       
+            return NULL;    
+        }   
+        return vaddr + offset_in_page(start);
+ }
+
+ static int __init warmboot_addr_console_early_init(void)
+ {    
+     warmboot_addr_p = remap_lowmem(0x10000834, sizeof(*warmboot_addr_p));
+     return 0;
+
+ }
+ console_initcall(warmboot_addr_console_early_init);
+ //Bacal, 20161015, reboot for oemF end
+
+
 /*register restart notify and own by debug start-------
 *
 */
@@ -602,14 +679,85 @@ void arch_reset(char mode, const char *cmd)
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 		rtc_mark_kpoc();
 #endif
+//<2016/11/22-AlanChang, [S1]Support oemS feature.
+#ifdef CONFIG_SONY_S1_SUPPORT
+	}else if( (cmd && !strcmp(cmd, "oemS")) || (cmd && !strcmp(cmd, "oem-53")) ) {
+		reboot = 1;
+		write_magic(S1_WARMBOOT_MAGIC_VAL | (S1_WARMBOOT_S1 << 16), 0);
+#endif
+//>2016/11/22-AlanChang.
+
+//<2016/08/25-JackHu, porting oem-50 command
+	}else if( cmd && !strcmp(cmd, "oem-50"))
+	{
+       pr_alert("[wd_api]arch_reset oem-50 Warmboot\n");
+	   reboot = 1;
+	   write_magic(S1_WARMBOOT_MAGIC_VAL | (S1_WARMBOOT_FOTA_CACHE << 16), 0);
+//<2016/08/25-JackHu
+
 #if defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8173)
 	} else if (cmd && !strcmp(cmd, "rpmbpk")) {
 		mtk_wd_SetNonResetReg2(0x0, 1);
 #endif
-	} else {
-		reboot = 1;
+    //Bacal, 20151221, reboot for oemF start
 	}
-
+	else if (cmd && !strcmp(cmd, "oemF"))
+	{
+	       
+               //[patch from cosmos]DMS06417163 OMVFOTA-The MUT could not reboot in the process of upgrading for Cosmos brown. 
+	       u16 temp_warmboot_addr_p;
+               temp_warmboot_addr_p=rtc_read(RTC_AL_DOM);
+               
+               pr_alert("[RTC Register] rtc_read(RTC_AL_DOM)(original) = %xh\n", temp_warmboot_addr_p);              
+               temp_warmboot_addr_p = 0x1111;	   
+               rtc_write(RTC_AL_DOM, temp_warmboot_addr_p);	     
+               rtc_write_trigger();	    
+               pr_alert("[RTC Register] rtc_write(RTC_AL_DOM, %xh)\n", temp_warmboot_addr_p);	     
+               pr_alert("[RTC Register] rtc_read(RTC_AL_DOM) = %xh\n", rtc_read(RTC_AL_DOM));
+               
+               pr_alert(" [BACAL] arch_reset: Warmboot reasen= %s\n", cmd);	    
+               if(warmboot_addr_p){            
+                    *warmboot_addr_p=0x6f46beef;
+               }    
+	}
+	//<2016/11/15-EricLin, RID002113 Verified Boot update start
+	/*
+		In "RID002113 Verified Boot update", we need
+		1, Trigger restart by adb reboot "dm-verity device corrupted"
+		2. phone restart with cmdline: "androidboot.veritymode=eio".
+		So we need new warm-boot reason : :"0x7708"( S1_WARMBOOT_VERIFIED_BOOT_UPDATE) in lk to add the cmdline "androidboot.veritymode=eio"
+	*/
+	else if (cmd && !strcmp(cmd, "dm-verity device corrupted"))
+	{
+	       u16 temp_warmboot_addr_p;
+               temp_warmboot_addr_p=rtc_read(RTC_AL_DOM);
+               
+               pr_alert("[RTC Register] rtc_read(RTC_AL_DOM)(original) = %xh\n", temp_warmboot_addr_p);              
+               temp_warmboot_addr_p = 0x2200;	   
+               rtc_write(RTC_AL_DOM, temp_warmboot_addr_p);	     
+               rtc_write_trigger();	    
+               pr_alert("[RTC Register] rtc_write(RTC_AL_DOM, %xh)\n", temp_warmboot_addr_p);	     
+               pr_alert("[RTC Register] rtc_read(RTC_AL_DOM) = %xh\n", rtc_read(RTC_AL_DOM));
+               
+               pr_alert(" [dbg] arch_reset: Warmboot reasen= %s\n", cmd);	    
+               if(warmboot_addr_p){            
+                    *warmboot_addr_p=0x7708beef;
+               }    
+	}
+	//>2016/11/15-EricLin
+	else {
+	       pr_alert(" [BACAL] arch_reset: Warmboot reasen= %s\n", cmd);	    
+              if(warmboot_addr_p){	       
+                    *warmboot_addr_p=0x7651beef;        
+              }
+//Bacal, 20151221, reboot for oemF end
+		reboot = 1;
+//<2016/11/22-AlanChang, [S1]Support oemS feature.
+#ifdef CONFIG_SONY_S1_SUPPORT
+		write_magic(S1_WARMBOOT_MAGIC_VAL | (S1_WARMBOOT_NORMAL << 16), 0);
+#endif
+//>2016/11/22-AlanChang.
+	}
 	if (res)
 		pr_err("arch_reset, get wd api error %d\n", res);
 	else
