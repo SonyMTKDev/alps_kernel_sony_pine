@@ -236,6 +236,12 @@ static ssize_t store_vibr_on(struct device *dev, struct device_attribute *attr,
 
 static DEVICE_ATTR(vibr_on, 0220, NULL, store_vibr_on);
 
+// [SM31][Vibrator][akenhsu] Add custom adjust voltage for fine tune 20161124 BEGIN
+extern ssize_t vib_vol_save(struct device *dev,struct device_attribute *attr, const char *buf, size_t count);
+extern ssize_t vib_vol_show(struct device *dev, struct device_attribute *attr, char *buf);
+static DEVICE_ATTR(vib_vol, 0664, vib_vol_show, vib_vol_save);
+// [SM31][Vibrator][akenhsu] 20161124 END
+
 /******************************************************************************
  * vib_mod_init
  *
@@ -293,6 +299,12 @@ static int vib_mod_init(void)
 	ret = device_create_file(mtk_vibrator.dev, &dev_attr_vibr_on);
 	if (ret)
 		VIB_DEBUG("device_create_file vibr_on fail!\n");
+
+// [SM31][Vibrator][akenhsu] Add custom adjust voltage for fine tune 20161124 BEGIN
+	ret = device_create_file(mtk_vibrator.dev, &dev_attr_vib_vol);
+	if (ret)
+		VIB_DEBUG("device_create_file vibr_on fail!\n");
+// [SM31][Vibrator][akenhsu] 20161124 END
 
 	VIB_DEBUG("vib_mod_init Done\n");
 
