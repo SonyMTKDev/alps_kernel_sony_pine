@@ -30,7 +30,10 @@ obj-$(CONFIG_MTK_SYS_CIRQ) += cirq/
 obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
 obj-$(CONFIG_MTK_FIQ_CACHE) += fiq_cache/
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
-obj-$(CONFIG_MTK_NFC) += nfc/
+# [NFC][Kent][16090701][begin]Proting NFC PN553
+#obj-$(CONFIG_MTK_NFC) += nfc/
+obj-y += nfc/
+# [NFC][Kent][16090701][end]Proting NFC PN553
 
 obj-$(CONFIG_MMPROFILE) += mmp/
 obj-$(CONFIG_MTK_AUXADC)	+= auxadc/
@@ -165,7 +168,10 @@ obj-$(CONFIG_MTK_RAM_CONSOLE)	+= ram_console/
 obj-$(CONFIG_MTK_DRAM_LOG_STORE)	+= log_store/
 obj-$(CONFIG_MTK_EXTMEM) += exm/
 obj-$(CONFIG_RT_REGMAP) += rt-regmap/
-obj-$(CONFIG_TCPC_CLASS) += pd/
+# [Arima_8100][bozhi_lin] RichTek rt1711 usb type c driver porting 20161024 begin
+# obj-$(CONFIG_TCPC_CLASS) += pd/
+obj-$(CONFIG_TCPC_CLASS) += pd_rt1711/
+# [Arima_8100][bozhi_lin] 20161024 end
 
 obj-$(CONFIG_MTK_SVP) += memory-ssvp/
 obj-$(CONFIG_ZONE_MOVABLE_CMA) += zone_movable_cma/
