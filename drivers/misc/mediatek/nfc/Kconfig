@@ -25,3 +25,16 @@ config NFC_MSR3110
 	  Card emulation or P2P function. If you are not sure about this, set n.
 
 endif # NFC
+# [NFC][Kent][16090701][begin] Proting NFC PN553 
+menuconfig ARIMA_NFC
+	tristate "NXP NFC drivers"
+	default n
+	---help---
+	  Say Y here for supporting NFC.
+#jack
+if ARIMA_NFC
+config PN553_NFC 
+	tristate "NXP PN553 NFC driver"
+	default n
+endif
+# [NFC][Kent][16090701][begin] Proting NFC PN553 
