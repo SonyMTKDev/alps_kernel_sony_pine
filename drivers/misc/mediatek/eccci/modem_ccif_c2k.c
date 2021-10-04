@@ -1288,6 +1288,9 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md, unsigned int tx_c
 	ccci_h = (struct ccci_header *)&md_ctrl->ccif_sram_layout->up_header;
 	ap_rt_data = (struct ap_query_md_feature *)&md_ctrl->ccif_sram_layout->ap_rt_data;
 
+    //added by major, for debug.
+	CCCI_NOTICE_MSG(md->index, KERN, "new api for sending rt data,02 sbp_code %u\n", md->sbp_code);
+
 	ccci_set_ap_region_protection(md);
 	/*header */
 	ccif_write32(&ccci_h->data[0], 0, 0x00);
