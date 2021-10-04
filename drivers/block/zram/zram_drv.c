@@ -51,7 +51,7 @@
 /* Globals */
 static int zram_major;
 static struct zram *zram_devices;
-static const char *default_compressor = "lzo";
+static const char *default_compressor = "lz4";
 
 /* Module params (documentation at end) */
 static unsigned int num_devices = 1;
@@ -192,8 +192,6 @@ static u32 insert_node_to_zram_tree(struct zram *zram, struct zram_meta *meta, u
 	struct rb_node *parent = NULL;
 	struct rb_node **new = NULL;
 	struct zram_table_entry *input_node;
-	struct rb_node *temp_node = NULL;
-	struct rb_node *check_parent = NULL;
 
 	input_node = &(meta->table[index]);
 	zsm_set_flag_index(meta, index, ZRAM_ZSM_NODE);
@@ -240,14 +238,6 @@ static u32 insert_node_to_zram_tree(struct zram *zram, struct zram_meta *meta, u
 		zsm_set_flag_index(meta, index, ZRAM_RB_NODE);
 		rb_link_node(&(meta->table[index].node), parent, new);
 		rb_insert_color(&(meta->table[index].node), local_root_zram_tree);
-		check_parent = &(meta->table[index].node);
-		temp_node = rb_parent(check_parent);
-		if (temp_node != NULL) {
-			if ((temp_node->rb_right == NULL) && (temp_node->rb_left == NULL)) {
-				pr_err("[ZRAM]ERROR !!!RB_tree error !!!\n");
-				BUG_ON(1);
-			}
-		}
 	}
 	return 0;
 }
