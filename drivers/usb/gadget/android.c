@@ -76,7 +76,13 @@ static const char longname[] = "Gadget Android";
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 #include <mt-plat/mt_boot_common.h>
+/*[Arima_8100][bozhi_lin] fix some pc not support hid driver in off-charging mode 20170105 begin*/
+#if 1
+#define KPOC_USB_FUNC "mass_storage"
+#else
 #define KPOC_USB_FUNC "hid"
+#endif
+/*[Arima_8100][bozhi_lin] 20170105 end*/
 #define KPOC_USB_VENDOR_ID 0x0E8D
 #define KPOC_USB_PRODUCT_ID 0x20FF
 #endif
@@ -184,8 +190,14 @@ static struct usb_device_descriptor device_desc = {
 	.bDeviceClass         = USB_CLASS_PER_INTERFACE,
 	.idVendor             = __constant_cpu_to_le16(VENDOR_ID),
 	.idProduct            = __constant_cpu_to_le16(PRODUCT_ID),
+/*[Arima_8100][bozhi_lin] for pass WHQL test set bcdDevice 20161130 begin*/
+#if 1
+	.bcdDevice            = __constant_cpu_to_le16(0x0000),
+#else
 	.bcdDevice            = __constant_cpu_to_le16(0xffff),
+#endif
 	.bNumConfigurations   = 1,
+/*[Arima_8100][bozhi_lin] 20161130 end*/
 };
 
 static struct usb_configuration android_config_driver = {

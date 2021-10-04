@@ -375,6 +375,13 @@ static inline struct mtp_dev *func_to_mtp(struct usb_function *f)
 static struct usb_request *mtp_request_new(struct usb_ep *ep, int buffer_size)
 {
 	struct usb_request *req = usb_ep_alloc_request(ep, GFP_KERNEL);
+/*[Arima_8100][bozhi_lin] For Kernel crash happened musb_g_giveback, add stack dump to collect debug information 20170502 begin*/
+#if defined(USER_BUILD)
+
+#else
+	dump_stack();
+#endif
+/*[Arima_8100][bozhi_lin] 20170502 end*/
 	if (!req)
 		return NULL;
 
@@ -394,6 +401,13 @@ static struct usb_request *mtp_request_new(struct usb_ep *ep, int buffer_size)
 
 static void mtp_request_free(struct usb_request *req, struct usb_ep *ep)
 {
+/*[Arima_8100][bozhi_lin] For Kernel crash happened musb_g_giveback, add stack dump to collect debug information 20170502 begin*/
+#if defined(USER_BUILD)
+
+#else
+	dump_stack();
+#endif
+/*[Arima_8100][bozhi_lin] 20170502 end*/
 	if (req) {
 		kfree(req->buf);
 		usb_ep_free_request(ep, req);
@@ -785,6 +799,11 @@ static void send_file_work(struct work_struct *data)
 	offset = dev->xfer_file_offset;
 	count = dev->xfer_file_length;
 
+	if (count < 0) {
+		dev->xfer_result = -EINVAL;
+		return;
+	}
+
 	DBG(cdev, "send_file_work(%lld %lld)\n", offset, count);
 
 	if (dev->xfer_send_header) {
@@ -888,6 +907,11 @@ static void receive_file_work(struct work_struct *data)
 	filp = dev->xfer_file;
 	offset = dev->xfer_file_offset;
 	count = dev->xfer_file_length;
+
+	if (count < 0) {
+		dev->xfer_result = -EINVAL;
+		return;
+	}
 
 	DBG(cdev, "receive_file_work(%lld)\n", count);
 

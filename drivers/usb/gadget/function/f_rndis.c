@@ -373,6 +373,8 @@ static struct usb_string rndis_string_defs[] = {
 	{  } /* end of list */
 };
 
+/*[Arima_8100][bozhi_lin] fix mtp can not be recognized by mac after enable usb tethering 20170331 begin*/
+#if 0
 static struct usb_gadget_strings rndis_string_table = {
 	.language =		0x0409,	/* en-us */
 	.strings =		rndis_string_defs,
@@ -382,6 +384,8 @@ static struct usb_gadget_strings *rndis_strings[] = {
 	&rndis_string_table,
 	NULL,
 };
+#endif
+/*[Arima_8100][bozhi_lin] 20170331 end*/
 
 /*-------------------------------------------------------------------------*/
 
@@ -770,7 +774,11 @@ rndis_bind(struct usb_configuration *c, struct usb_function *f)
 {
 	struct usb_composite_dev *cdev = c->cdev;
 	struct f_rndis		*rndis = func_to_rndis(f);
+/*[Arima_8100][bozhi_lin] fix mtp can not be recognized by mac after enable usb tethering 20170331 begin*/
+#if 0
 	struct usb_string	*us;
+#endif
+/*[Arima_8100][bozhi_lin] 20170331 end*/
 	int			status;
 	struct usb_ep		*ep;
 
@@ -809,6 +817,8 @@ rndis_bind(struct usb_configuration *c, struct usb_function *f)
 		rndis_opts->bound = true;
 	}
 
+/*[Arima_8100][bozhi_lin] fix mtp can not be recognized by mac after enable usb tethering 20170331 begin*/
+#if 0
 	us = usb_gstrings_attach(cdev, rndis_strings,
 				 ARRAY_SIZE(rndis_string_defs));
 	if (IS_ERR(us)) {
@@ -818,6 +828,8 @@ rndis_bind(struct usb_configuration *c, struct usb_function *f)
 	rndis_control_intf.iInterface = us[0].id;
 	rndis_data_intf.iInterface = us[1].id;
 	rndis_iad_descriptor.iFunction = us[2].id;
+#endif
+/*[Arima_8100][bozhi_lin] 20170331 end*/
 
 	/* allocate instance-specific interface IDs */
 	status = usb_interface_id(c, f);
@@ -978,6 +990,20 @@ rndis_bind_config_vendor(struct usb_configuration *c, u8 ethaddr[ETH_ALEN],
 {
 	struct f_rndis	*rndis;
 	int		status;
+
+/*[Arima_8100][bozhi_lin] fix mtp can not be recognized by mac after enable usb tethering 20170331 begin*/
+#if 1
+	if (rndis_string_defs[0].id == 0) {
+		status = usb_string_ids_tab(c->cdev, rndis_string_defs);
+		if (status)
+			return status;
+
+		rndis_control_intf.iInterface = rndis_string_defs[0].id;
+		rndis_data_intf.iInterface = rndis_string_defs[1].id;
+		rndis_iad_descriptor.iFunction = rndis_string_defs[2].id;
+	}
+#endif
+/*[Arima_8100][bozhi_lin] 20170331 end*/
 
 	/* allocate and initialize one new instance */
 	status = -ENOMEM;
