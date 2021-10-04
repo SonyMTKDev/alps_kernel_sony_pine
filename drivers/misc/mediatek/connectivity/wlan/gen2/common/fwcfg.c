@@ -22,9 +22,11 @@ static char *strtok_r(char *s, const char *delim, char **last);
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
+//[SM31][RaymondLin]Modify screen off DTIM to 300ms begin
 struct _FW_CFG __weak fwCfgArray[] = {
-
+{"ScreenoffDTIMPeriod", "0x3"},
 };
+//[SM31][RaymondLin]Modify screen off DTIM to 300ms end
 /* ******************************************************************************
 *                              F U N C T I O N S
 *********************************************************************************

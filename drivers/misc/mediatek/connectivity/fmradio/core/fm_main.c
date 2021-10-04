@@ -243,12 +243,9 @@ fm_s32 fm_wholechip_rst_cb(fm_s32 sta)
 	if (sta == 1) {
 		if (fm_sys_state_get(fm) == FM_SUBSYS_RST_OFF)
 			fm_sys_state_set(fm, FM_SUBSYS_RST_START);
-	} else if (sta == 2) {
-		if (fm_sys_state_get(fm) == FM_SUBSYS_RST_START)
-			fm_sys_state_set(fm, FM_SUBSYS_RST_OFF);
-	} else
+	} else {
 		fm->timer_wkthd->add_work(fm->timer_wkthd, fm->rst_wk);
-
+	}
 	return 0;
 }
 
@@ -426,7 +423,10 @@ fm_s32 fm_powerup(struct fm *fm, struct fm_tune_parm *parm)
 	WCN_DBG(FM_DBG | MAIN, "vol=%d!!!\n", tmp_vol);
 
 	/* fm_low_ops.bi.volset(0); */
-	fm->vol = 15;
+/* --- [SM31][HFP][LuboLu] Modify FM default volume gain. 20161011 begin ---  */
+	fm->vol = 13;
+    fm_low_ops.bi.volset(fm->vol);
+/* --- [SM31][HFP][LuboLu] Modify FM default volume gain. 20161011 end ---  */
 	if (fm_low_ops.ri.rds_bci_get) {
 		fm_timer_sys->init(fm_timer_sys, fm_timer_func, (unsigned long)g_fm_struct,
 				   fm_low_ops.ri.rds_bci_get(), 0);

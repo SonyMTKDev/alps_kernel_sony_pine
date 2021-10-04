@@ -571,7 +571,6 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 	WLAN_STATUS rStatus;
 	UINT_32 i, u4BufLen;
 	PARAM_SCAN_REQUEST_ADV_T rScanRequest;
-	UINT_32 num_ssid = 0;
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -581,20 +580,20 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 		return -EBUSY;
 
 	kalMemZero(&rScanRequest, sizeof(PARAM_SCAN_REQUEST_ADV_T));
+	DBGLOG(REQ, TRACE, "mtk_cfg80211_scan(), original n_ssids=%d\n", request->n_ssids);
 
-	num_ssid = (UINT_32)request->n_ssids;
 	if (request->n_ssids == 0) {
 		rScanRequest.u4SsidNum = 0;
 	} else if (request->n_ssids <= (SCN_SSID_MAX_NUM + 1)) {
 		if ((request->ssids[request->n_ssids - 1].ssid == NULL)
 			|| (request->ssids[request->n_ssids - 1].ssid_len == 0))
-			num_ssid--; /* remove the rear NULL SSID if this is a wildcard scan*/
+			request->n_ssids--; /* remove the rear NULL SSID if this is a wildcard scan*/
 
-		if (num_ssid == (SCN_SSID_MAX_NUM + 1)) /* remove the rear SSID if this is a specific scan */
-			num_ssid--;
+		if (request->n_ssids == (SCN_SSID_MAX_NUM + 1)) /* remove the rear SSID if this is a specific scan */
+			request->n_ssids--;
+		rScanRequest.u4SsidNum = request->n_ssids;
 
-		rScanRequest.u4SsidNum = num_ssid; /* real SSID number to firmware */
-		for (i = 0; i < rScanRequest.u4SsidNum; i++) {
+		for (i = 0; i < request->n_ssids; i++) {
 			COPY_SSID(rScanRequest.rSsid[i].aucSsid, rScanRequest.rSsid[i].u4SsidLen,
 				  request->ssids[i].ssid, request->ssids[i].ssid_len);
 		}
@@ -602,7 +601,7 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 		DBGLOG(REQ, ERROR, "request->n_ssids:%d\n", request->n_ssids);
 		return -EINVAL;
 	}
-	DBGLOG(REQ, INFO, "mtk_cfg80211_scan(), n_ssids=%d, num_ssid=%d\n", request->n_ssids, num_ssid);
+	DBGLOG(REQ, INFO, "mtk_cfg80211_scan(), n_ssids=%d\n", request->n_ssids);
 
 	if (request->ie_len > 0) {
 		rScanRequest.u4IELength = request->ie_len;
@@ -2241,11 +2240,7 @@ int mtk_cfg80211_sched_scan_stop(IN struct wiphy *wiphy, IN struct net_device *n
 		DBGLOG(REQ, WARN, "scheduled scan error:%x\n", rStatus);
 		return -EINVAL;
 	}
-	/* 1. reset first for newly incoming request */
-	/* GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV); */
-	if (prGlueInfo->prSchedScanRequest != NULL)
-		prGlueInfo->prSchedScanRequest = NULL;
-	/* GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV); */
+
 	return 0;
 }
 

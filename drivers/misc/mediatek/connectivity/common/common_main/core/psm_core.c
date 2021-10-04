@@ -1308,7 +1308,7 @@ static inline INT32 _stp_psm_do_wait(MTKSTP_PSM_T *stp_psm, MTKSTP_PSM_STATE_T s
 		_stp_psm_opid_dbg_out_printk(g_stp_psm_opid_dbg);
 		return STP_PSM_OPERATION_FAIL;
 	}
-	STP_PSM_DBG_FUNC("+Total waits for %s takes %d msec\n", g_psm_state[state], i * POLL_WAIT);
+	STP_PSM_INFO_FUNC("+Total waits for %s takes %d msec\n", g_psm_state[state], i * POLL_WAIT);
 	return STP_PSM_OPERATION_SUCCESS;
 }
 

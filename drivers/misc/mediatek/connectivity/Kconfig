@@ -282,7 +282,7 @@ config MTK_DHCPV6C_WIFI
 config MTK_CONN_LTE_IDC_SUPPORT
 	bool "MediaTek CONN LTE IDC support"
 	select MTK_CONN_MD
-	default y if MTK_ECCCI_DRIVER
+	default y
 	help
 	  This option enables CONN LTE IDC support
 

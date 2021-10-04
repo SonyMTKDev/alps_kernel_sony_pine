@@ -1128,7 +1128,7 @@ VOID rsnGenerateWPAIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 		((prAdapter->rWifiVar.rConnSettings.eAuthMode == AUTH_MODE_WPA) ||
 		(prAdapter->rWifiVar.rConnSettings.eAuthMode == AUTH_MODE_WPA_PSK)))) {
 #endif
-		if (prAdapter->fgIsP2PRegistered && prP2pSpecificBssInfo && prP2pSpecificBssInfo->u2WpaIeLen != 0) {
+		if (prP2pSpecificBssInfo->u2WpaIeLen != 0) {
 			kalMemCopy(pucBuffer, prP2pSpecificBssInfo->aucWpaIeBuffer, prP2pSpecificBssInfo->u2WpaIeLen);
 			prMsduInfo->u2FrameLength += prP2pSpecificBssInfo->u2WpaIeLen;
 			return;
@@ -1279,6 +1279,7 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 					   arPmkidCache[u4Entry].rBssidInfo.arPMKID, sizeof(PARAM_PMKID_VALUE));
 				cp += sizeof(PARAM_PMKID_VALUE);
 			}
+
 #if CFG_SUPPORT_802_11W
 			if (kalGetMfpSetting(prAdapter->prGlueInfo) != RSN_AUTH_MFP_DISABLED) {
 				if (!fgPmkidExist) {
@@ -2010,9 +2011,6 @@ void rsnStartSaQueryTimer(IN P_ADAPTER_T prAdapter)
 	    kalMemAlloc(prBssSpecInfo->u4SaQueryCount * ACTION_SA_QUERY_TR_ID_LEN, VIR_MEM_TYPE);
 	if (!prBssSpecInfo->pucSaQueryTransId) {
 		DBGLOG(RSN, ERROR, "MFP: Fail to alloc buffer for sa query id list\n");
-		if (pucTmp)
-			kalMemFree(pucTmp, VIR_MEM_TYPE,
-			..(prBssSpecInfo->u4SaQueryCount - 1) * ACTION_SA_QUERY_TR_ID_LEN);
 		return;
 	}
 
