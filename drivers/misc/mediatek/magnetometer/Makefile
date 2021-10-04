@@ -18,8 +18,10 @@ obj-$(CONFIG_MTK_AKM8963_NEW)	+=  akm8963-new/
 obj-$(CONFIG_MTK_AKM8975)	+=  akm8975/
 obj-$(CONFIG_MTK_AKM8975_AUTO)	+=  akm8975_auto/
 obj-$(CONFIG_MTK_AKM09911)   +=  akm09911/
+#[SM31][Sensors][JasonHsing] M-sensor akm09918 driver porting 20161201
+obj-$(CONFIG_MTK_AKM09918_NEW)   +=  akm09918-new/
 obj-$(CONFIG_MTK_AKM09912)   +=  akm09912/
-obj-y   +=  akm09911-new/
+#obj-y   +=  akm09911-new/
 obj-$(CONFIG_MTK_AMI304)   +=  ami304/
 obj-$(CONFIG_MTK_AMI304_AUTO)   +=  ami304_auto/
 obj-$(CONFIG_MTK_BMM050)	+=  bmm050/
@@ -49,4 +51,6 @@ obj-$(CONFIG_MTK_YAS532)   +=  yamaha532/
 obj-$(CONFIG_MTK_YAS532_NEW)   +=  yamaha532-new/
 obj-$(CONFIG_MTK_YAS537)	+=  yamaha537/
 obj-$(CONFIG_MTK_BMC156_MAG)	+=  bmc156_mag/
+#[SM31][Sensors][JasonHsing] M-sensor memsic3630 driver porting 20161004
+obj-$(CONFIG_MTK_MMC3630X)	+=  mmc3630kj/
 endif
