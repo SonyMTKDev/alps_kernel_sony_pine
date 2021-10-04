@@ -176,6 +176,12 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*S5K*/
 #define S5K2L7_SENSOR_ID                        0x20C7
 #define S5K3L8_SENSOR_ID                        0x30C8
+//[SM31]Add MainCamear 2nd source Person liu 20170214 S
+#define S5K3L8S_SENSOR_ID                        0x30C9
+//[SM31]Add MainCamear 2nd source Person liu 20170214 E
+//[SM31]Add MainCamear 3rd source Person liu 20170317 S
+#define S5K3L8S2_SENSOR_ID                        0x30CA
+//[SM31]Add MainCamear 3rd source Person liu 20170317 E
 #define S5K2X8_SENSOR_ID                        0x2188
 #define S5K2P8_SENSOR_ID                        0x2108
 #define S5K3P3SX_SENSOR_ID                      0x3103
@@ -193,6 +199,9 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define S5K53BEB_SENSOR_ID                      0x87A8
 #define S5K5BAFX_SENSOR_ID                      0x05BA
 #define S5K5E2YA_SENSOR_ID                      0x5e20
+// [SM31][Camera][akenhsu] Add 2nd source of Front Camera 20170214 BEGIN
+#define S5K5E2YB_SENSOR_ID                      0x5e21
+// [SM31][Camera][akenhsu] 20170214 END
 #define S5K4H5YX_2LANE_SENSOR_ID                0x485B
 #define S5K4H5YC_SENSOR_ID                      0x485B
 #define S5K83AFX_SENSOR_ID                      0x01C4
@@ -352,6 +361,12 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*S5K*/
 #define SENSOR_DRVNAME_S5K2L7_MIPI_RAW          "s5k2l7mipiraw"
 #define SENSOR_DRVNAME_S5K3L8_MIPI_RAW          "s5k3l8mipiraw"
+//[SM31]Add MainCamear 2nd source Person liu 20170214 S
+#define SENSOR_DRVNAME_S5K3L8S_MIPI_RAW         "s5k3l8smipiraw"
+//[SM31]Add MainCamear 2nd source Person liu 20170214 E
+//[SM31]Add MainCamear 3rd source Person liu 20170317 S
+#define SENSOR_DRVNAME_S5K3L8S2_MIPI_RAW         "s5k3l8s2mipiraw"
+//[SM31]Add MainCamear 3rd source Person liu 20170317 E
 #define SENSOR_DRVNAME_S5K2X8_MIPI_RAW          "s5k2x8mipiraw"
 #define SENSOR_DRVNAME_S5K2P8_MIPI_RAW          "s5k2p8mipiraw"
 #define SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW      "s5k3p3sxmipiraw"
@@ -364,6 +379,9 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_S5K5CAGX_YUV             "s5k5cagxyuv"
 #define SENSOR_DRVNAME_S5K4H5YX_2LANE_MIPI_RAW  "s5k4h5yx2lanemipiraw"
 #define SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW        "s5k5e2yamipiraw"
+// [SM31][Camera][akenhsu] Add 2nd source of Front Camera 20170214 BEGIN
+#define SENSOR_DRVNAME_S5K5E2YB_MIPI_RAW        "s5k5e2ybmipiraw"
+// [SM31][Camera][akenhsu] 20170214 END
 #define SENSOR_DRVNAME_S5K8AAYX_MIPI_YUV        "s5k8aayxmipiyuv"
 #define SENSOR_DRVNAME_S5K8AAYX_YUV             "s5k8aayxyuv"
 #define SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW        "s5k5e8yxmipiraw"
@@ -425,7 +443,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_T8EV5_YUV                "t8ev5_yuv"
 /*Test*/
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW_5MP      "imx135mipiraw5mp"
-#define SENSOR_DRVNAME_IMX135_MIPI_RAW_8MP      "imx135mipiraw8mp"
+
 /*******************************************************************************
 *
 ********************************************************************************/
