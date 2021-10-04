@@ -12,7 +12,7 @@
  */
 
 /*
- * DW9714AF voice coil motor driver
+ * DW9714TAF voice coil motor driver
  *
  *
  */
@@ -25,7 +25,7 @@
 #include "lens_info.h"
 
 
-#define AF_DRVNAME "DW9714AF_DRV"
+#define AF_DRVNAME "DW9714TAF_DRV"
 #define AF_I2C_SLAVE_ADDR        0x18
 
 #define AF_DEBUG
@@ -92,12 +92,12 @@ static int s4AF_WriteReg(u16 a_u2Data)
 	return 0;
 }
 //[SM31][Camera] Fix AF HW Noise 20170110 Person Liu S
-static void DW9714AF_init_drv(void)
+static void DW9714TAF_init_drv(void)
 {
 	
 	char puSendCmd0[2] = {0xec,0xa3};
-	char puSendCmd1[2] = {0xa1,0x0E};
-	char puSendCmd2[2] = {0xf2,0x90};
+	char puSendCmd1[2] = {0xa1,0x0D}; //20170509 yaohung
+	char puSendCmd2[2] = {0xf2,0x28};//20170509 yaohung
 	char puSendCmd3[2] = {0xdc,0x51};
 	
 	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
@@ -151,7 +151,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	if (*g_pAF_Opened == 1) {
 		unsigned short InitPos;
 //[SM31][Camera] Fix AF HW Noise 20170110 Person Liu S
-		DW9714AF_init_drv();
+		DW9714TAF_init_drv();
 //[SM31][Camera] Fix AF HW Noise 20170110 Person Liu E
 		ret = s4AF_ReadReg(&InitPos);
 
@@ -211,7 +211,7 @@ static inline int setAFMacro(unsigned long a_u4Position)
 }
 
 /* ////////////////////////////////////////////////////////////// */
-long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
+long DW9714TAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
 	long i4RetValue = 0;
 
@@ -255,7 +255,7 @@ long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned l
 /* 2.Shut down the device on last close. */
 /* 3.Only called once on last time. */
 /* Q1 : Try release multiple times. */
-int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
+int DW9714TAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	char puSendCmd0[2] = {0x80,0x00}; /* Power down mode */
 	LOG_INF("Start\n");
@@ -329,7 +329,7 @@ int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-void DW9714AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+void DW9714TAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
