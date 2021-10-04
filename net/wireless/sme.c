@@ -581,7 +581,9 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
 			       struct cfg80211_bss *bss)
 {
 	struct wireless_dev *wdev = dev->ieee80211_ptr;
-	const u8 *country_ie;
+//[SM31][RaymondLin] WIFI. Use CDF control wifi country code - begin
+	//const u8 *country_ie;
+//[SM31][RaymondLin] WIFI. Use CDF control wifi country code - end	
 #ifdef CONFIG_CFG80211_WEXT
 	union iwreq_data wrqu;
 #endif
@@ -658,7 +660,8 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
 	wdev->current_bss = bss_from_pub(bss);
 
 	cfg80211_upload_connect_keys(wdev);
-
+//[SM31][RaymondLin] WIFI. Use CDF control wifi country code - begin
+/*
 	rcu_read_lock();
 	country_ie = ieee80211_bss_get_ie(bss, WLAN_EID_COUNTRY);
 	if (!country_ie) {
@@ -671,15 +674,18 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
 
 	if (!country_ie)
 		return;
-
+*/
 	/*
 	 * ieee80211_bss_get_ie() ensures we can access:
 	 * - country_ie + 2, the start of the country ie data, and
 	 * - and country_ie[1] which is the IE length
 	 */
+/*	 
 	regulatory_hint_country_ie(wdev->wiphy, bss->channel->band,
 				   country_ie + 2, country_ie[1]);
 	kfree(country_ie);
+*/	
+//[SM31][RaymondLin] WIFI. Use CDF control wifi country code - end	
 }
 
 void cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
