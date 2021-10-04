@@ -28,5 +28,7 @@ source "drivers/misc/mediatek/alsps/cm36686-new/Kconfig"
 source "drivers/misc/mediatek/alsps/cm36558/Kconfig"
 source "drivers/misc/mediatek/alsps/APDS9930-new/Kconfig"
 source "drivers/misc/mediatek/alsps/EPL2182-new/Kconfig"
+#[SM31][Sensors][JasonHsing] P/L-sensor epl2590 driver porting 20161003 --
+source "drivers/misc/mediatek/alsps/epl259x-new/Kconfig"
 source "drivers/misc/mediatek/alsps/stk3x1x-new/Kconfig"
 source "drivers/misc/mediatek/alsps/alspshub/Kconfig"
