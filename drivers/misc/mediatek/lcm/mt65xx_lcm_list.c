@@ -705,6 +705,24 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&hx8394a_hd720_dsi_vdo_tianma_lcm_drv,
 #endif
 
+//[SM31][Raymond Lin] LCM porting  begin
+#if defined(R6135_HD720_DSI_VDO)
+	&r6135_hd720_dsi_vdo_lcm_drv,
+#endif
+//[SM31][Raymond Lin] LCM porting  end
+
+//[SM31][Raymond Lin] Truly OPT LCM begin
+#if defined(R6135OTP_HD720_DSI_VDO)
+	&r6135otp_hd720_dsi_vdo_lcm_drv,
+#endif
+//[SM31][Raymond Lin] Truly OPT LCM end
+
+//[SM31][Raymond Lin] LCM porting  begin
+#if defined(NT35521S_HD720_DSI_VDO)
+	&nt35521s_hd720_dsi_vdo_lcm_drv,
+#endif
+//[SM31][Raymond Lin] LCM porting  end
+
 #if defined(R69429_WUXGA_DSI_CMD)
 	&r69429_wuxga_dsi_cmd_lcm_drv,
 #endif
