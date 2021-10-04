@@ -19,6 +19,13 @@ module_param(tpd_calibrate_en, int, 0664);
 int tpd_show_version = 0;
 module_param(tpd_show_version, int, 0664);
 
+/*[Arima_8100][bozhi_lin] FocalTech ft3427 touch driver porting 20160920 begin*/
+#if defined(TPD_REPORT_VENDOR_FW)
+char *tpd_show_vendor_firmware = NULL;
+module_param(tpd_show_vendor_firmware, charp, 0664);
+#endif
+/*[Arima_8100][bozhi_lin] 20160920 end*/
+
 /* switch touch panel into single scan mode for decreasing interference */
 void tpd_switch_single_mode(void)
 {
