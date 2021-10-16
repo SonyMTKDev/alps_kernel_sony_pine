@@ -862,7 +862,7 @@ static void backup_smi_common(void)
 			err_count++;
 	}
 
-	if (err_count)
+	if (err_count == SMI_COMMON_BACKUP_REG_NUM)
 		SMIMSG("backup fail!!\n");
 }
 
@@ -876,7 +876,7 @@ static void restore_smi_common(void)
 			err_count++;
 	}
 
-	if (err_count)
+	if (err_count == SMI_COMMON_BACKUP_REG_NUM)
 		SMIMSG("backup value abnormal!!\n");
 
 	if (smi_debug_level > 0) {
