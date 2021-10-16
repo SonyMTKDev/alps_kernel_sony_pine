@@ -534,6 +534,9 @@ static void thermal_interrupt_handler(int bank)
 {
 	__u32 ret = 0;
 	unsigned long flags;
+	struct file *fp;
+	mm_segment_t fs;
+	loff_t pos;
 
 	mt_ptp_lock(&flags);
 
@@ -574,8 +577,27 @@ static void thermal_interrupt_handler(int bank)
 		wake_up_process(ktp_thread_handle);
 #endif
 	}
-	if (ret & THERMAL_tri_SPM_State2)
+	if (ret & THERMAL_tri_SPM_State2) {
 		tscpu_printk("thermal_isr: Thermal state2 to trigger SPM state2\n");
+
+		fp = filp_open("/data/dumpsys/sysrst.dat", O_RDWR|O_CREAT, 0666);
+		if (IS_ERR(fp))
+		{
+			pr_debug("No sysrst.dat file\n");
+		}
+		else
+		{
+			pos = 0;
+			fs = get_fs();
+			set_fs(KERNEL_DS);
+			vfs_write(fp, "mtktscpu-sysrst", sizeof("mtktscpu-sysrst"), &pos);	
+			filp_close(fp, NULL);				
+			vfs_fsync(fp, 0);
+			set_fs(fs);
+			pr_debug("vfs_write mtktscpu-sysrst File\n");
+		}
+		mdelay(5);
+	}
 
 	mt_ptp_unlock(&flags);
 

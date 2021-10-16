@@ -718,11 +718,34 @@ static int wmt_cl_get_cur_state(struct thermal_cooling_device *cool_dev, unsigne
 
 static int wmt_cl_set_cur_state(struct thermal_cooling_device *cool_dev, unsigned long v)
 {
+	struct file *fp;
+	mm_segment_t fs;
+	loff_t pos;
+
 	wmt_tm_dprintk("[%s] %lu\n", __func__, v);
 	cl_dev_state = v;
 
 	if (cl_dev_state == 1) {
 		wmt_tm_printk("wmt_cl_set_cur_state = 1\n");
+
+		fp = filp_open("/data/dumpsys/sysrst.dat", O_RDWR|O_CREAT, 0666);
+		if (IS_ERR(fp))
+		{
+			pr_debug("No sysrst.dat file\n");
+		}
+		else
+		{
+			pos = 0;
+			fs = get_fs();
+			set_fs(KERNEL_DS);
+			vfs_write(fp, cool_dev->type, sizeof(cool_dev->type), &pos);	
+			filp_close(fp, NULL);				
+			vfs_fsync(fp, 0);
+			set_fs(fs);
+			pr_debug("vfs_write %s File\n", cool_dev->type);
+		}
+		mdelay(5);
+
 		/* the temperature is over than the critical, system reboot. */
 /* BUG(); */
 		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */

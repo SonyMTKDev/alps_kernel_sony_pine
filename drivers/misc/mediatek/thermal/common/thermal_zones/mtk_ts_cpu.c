@@ -613,6 +613,9 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 {
 	int ret = 0;
 	int curr_temp;
+	struct file *fp;
+	mm_segment_t fs;
+	loff_t pos;
 #if ENALBE_SW_FILTER
 	int temp_temp;
 	static int last_cpu_real_temp;
@@ -629,7 +632,25 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 		printk_ratelimited(TSCPU_LOG_TAG " %u %u CPU T=%d\n",
 			apthermolmt_get_cpu_power_limit(), apthermolmt_get_gpu_power_limit(), curr_temp);
 	}
-
+	if ((curr_temp > 114999)) {
+		fp = filp_open("/data/dumpsys/sysrst.dat", O_RDWR|O_CREAT, 0666);
+		if (IS_ERR(fp))
+		{
+			pr_debug("No sysrst.dat file\n");
+		}
+		else
+		{
+			pos = 0;
+			fs = get_fs();
+			set_fs(KERNEL_DS);
+			vfs_write(fp, "mtktscpu-sysrst", sizeof("mtktscpu-sysrst"), &pos);
+			filp_close(fp, NULL);
+			vfs_fsync(fp, 0);
+			set_fs(fs);
+			pr_debug("vfs_write mtktscpu-sysrst File\n");
+		}
+		mdelay(5);
+	}
 #if ENALBE_SW_FILTER
 	temp_temp = curr_temp;
 	if (curr_temp != 0) {/* not resumed from suspensio... */
