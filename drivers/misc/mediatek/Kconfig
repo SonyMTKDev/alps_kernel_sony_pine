@@ -259,6 +259,7 @@ config MTK_SENSORS_1_0
 	  And we support loadble drivers
 
 source "drivers/misc/mediatek/sensors-1.0/Kconfig"
+source "drivers/misc/mediatek/pdr_sensor/Kconfig"
 
 endmenu  # Sensors
 
@@ -446,6 +447,8 @@ source "drivers/misc/mediatek/teei/Kconfig"
 source "drivers/misc/mediatek/trustzone/Kconfig"
 source "drivers/misc/mediatek/watchpoint/Kconfig"
 source "drivers/misc/mediatek/rt-regmap/Kconfig"
+source "drivers/misc/mediatek/pd/Kconfig"
+source "drivers/misc/mediatek/pd_rt1711/Kconfig"
 
 config MTK_DM_VERITY_OFF
 	bool "Disable dm-verity"
