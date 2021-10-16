@@ -3234,11 +3234,45 @@ void chrdet_int_handler(void)
 
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 		    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+			{
+				extern int ktd2037_rgb_led_off(void);
+				ktd2037_rgb_led_off();
+			}
 			PMICLOG("[chrdet_int_handler] Unplug Charger/USB\n");
+#if 0
+			{
+				if (BMT_status.charger_type == CHARGING_HOST) {
+					static bool first_boot = true;
+					if (first_boot) {
+						extern CHARGER_TYPE First_Boot_CHR_Type;
+						First_Boot_CHR_Type = BMT_status.charger_type;
+						first_boot = false;
+						return;
+					} else {
+						mt_power_off();
+					}
+				} else {
+					mt_power_off();
+				}
+			}
+#else
+#if 1
+			if (1) {
+				printk("[B]%s(%d): skip mt_power_off when boot-up\n", __func__, __LINE__);
+			} else {
+				mt_power_off();
+			}
+#else
 			mt_power_off();
+#endif
+#endif
 		}
 	}
 #endif
+	{
+		extern int ktd2037_rgb_led_off(void);
+		if (!upmu_get_rgs_chrdet()) ktd2037_rgb_led_off();
+	}
 	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	do_chrdet_int_task();

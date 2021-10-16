@@ -55,6 +55,11 @@
 #include <mt-plat/mt_usb2jtag.h>
 #endif
 
+#if defined(CONFIG_TCPC_CLASS)
+#include <tcpm.h>
+static struct tcpc_device *tcpc_dev;
+#endif
+
 /* ============================================================ // */
 /* extern function */
 /* ============================================================ // */
@@ -289,6 +294,28 @@ int hw_charging_get_charger_type(void)
 		} else {
 			CHR_Type_num = NONSTANDARD_CHARGER;
 			battery_log(BAT_LOG_CRTI, "step A1 : Non STANDARD CHARGER!\r\n");
+			#if defined(CONFIG_TCPC_CLASS)
+			{
+				uint8_t cc1;
+				uint8_t cc2;
+				tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+				if (tcpc_dev) {
+					tcpm_inquire_remote_cc(tcpc_dev, &cc1, &cc2, true);
+					battery_log(BAT_LOG_CRTI, "cc1=%d, cc2=%d\r\n", cc1, cc2);
+					if ((cc1 == 0x7) || (cc2 == 0x07)) {
+						battery_log(BAT_LOG_CRTI, "step A1_1 : Suppose is Type-C 3A PD Charger\r\n");
+						is_dcp_type = true;
+						CHR_Type_num = STANDARD_CHARGER;
+						battery_log(BAT_LOG_CRTI, "step A1_1 : STANDARD CHARGER!\r\n");
+					} else if ((cc1 == 0x6) || (cc2 == 0x06)) {
+						battery_log(BAT_LOG_CRTI, "step A1_2 : Suppose is Type-C 1.5A PD Charger\r\n");
+						is_dcp_type = true;
+						CHR_Type_num = STANDARD_CHARGER;
+						battery_log(BAT_LOG_CRTI, "step A1_2 : STANDARD CHARGER!\r\n");
+					}
+				}
+			}
+			#endif
 		}
 	} else {
 	/********* Step A2 ***************/

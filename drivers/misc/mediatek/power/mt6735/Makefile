@@ -11,6 +11,8 @@
 # GNU General Public License for more details.
 #
 
+ccflags-$(CONFIG_TCPC_CLASS) += -I$(srctree)/drivers/misc/mediatek/pd_rt1711/inc
+
 #obj-$(CONFIG_MTK_PMIC)          += pmic.o upmu_common.o pmic_auxadc.o pmic_chr_type_det.o mt6311.o
 obj-$(CONFIG_MTK_PMIC)          += pmic.o upmu_common.o pmic_auxadc.o mt6311.o
 
@@ -49,7 +51,11 @@ else
                               ifeq ($(CONFIG_MTK_RT9536_SUPPORT),y)
                                   obj-$(CONFIG_MTK_SMART_BATTERY) += rt9536.o charging_hw_rt9536.o
                               else
-                                  obj-$(CONFIG_MTK_SMART_BATTERY) += charging_hw_pmic.o
+                                   ifeq ($(CONFIG_MTK_RT9458_SUPPORT),y)
+                                       obj-$(CONFIG_MTK_SMART_BATTERY) += rt9458.o charging_hw_rt9458.o
+                                   else
+                                       obj-$(CONFIG_MTK_SMART_BATTERY) += charging_hw_pmic.o
+                                   endif
                               endif
                          endif
                     endif
