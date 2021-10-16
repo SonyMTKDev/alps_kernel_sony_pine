@@ -30,6 +30,8 @@ obj-$(CONFIG_MTK_MPU6515A)		+= mpu6515/
 obj-$(CONFIG_MTK_BMA222E)		+= bma222e/
 obj-$(CONFIG_MTK_MPU6050G)   +=  mpu6050g/
 obj-$(CONFIG_MTK_STK8BAXX) += stk8baxx/
+obj-$(CONFIG_MTK_MXC400X)   +=  mxc400x/
+obj-$(CONFIG_MTK_BMA4XY)   +=  bma4xy/
 # Vanzo:yucheng on: Tue, 06 Jan 2015 10:34:15 +0800
 # added for new structure config alsps
 endif
