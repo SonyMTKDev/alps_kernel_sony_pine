@@ -1268,12 +1268,21 @@ static u32 msdc_ldo_power(u32 on, MT65XX_POWER powerId, int voltage_uv,
 }
 #endif
 
+#ifndef CONFIG_MTK_LEGACY
+void msdc_sd_power_off(void)
+{
+	pr_err("SD overheat,pmic Eint disable SD power!\n");
+	msdc_ldo_power(0, POWER_LDO_VMC, VOL_3000, &g_msdc1_io);
+	msdc_ldo_power(0, POWER_LDO_VMCH, VOL_3000, &g_msdc1_flash);
+}
+#else
 void msdc_sd_power_off(void)
 {
 	pr_err("SD overheat,pmic Eint disable SD power!\n");
 	msdc_ldo_power(0, MT6328_POWER_LDO_VMC, VOL_3000, &g_msdc1_io);
 	msdc_ldo_power(0, MT6328_POWER_LDO_VMCH, VOL_3000, &g_msdc1_flash);
 }
+#endif
 
 void msdc_set_smt(struct msdc_host *host, int set_smt)
 {
@@ -9457,6 +9466,64 @@ static struct platform_driver mt_msdc_driver = {
 		   },
 };
 
+#include <linux/proc_fs.h>
+static struct proc_dir_entry *proc_emmc_vendor;
+
+#define SAMSUNG_EMMC_CHIP 0x15
+#define SAMSUNG_2G_PRODUCT_NAME 0x51
+#define SAMSUNG_3G_PRODUCT_NAME 0x52
+static unsigned int emmc_manfid=0, emmc_rpmb_size=0;
+static char emmc_product_name=0;
+static int proc_emmc_vendor_show(struct seq_file *m, void *v)
+{
+	struct msdc_host *host;
+	struct mmc_card *card;
+
+	/* emmc always in slot0 */
+	host = msdc_get_host(MSDC_EMMC,MSDC_BOOT_EN,0);
+	BUG_ON(!host);
+	BUG_ON(!host->mmc);
+	BUG_ON(!host->mmc->card);
+
+	card = host->mmc->card;
+
+	emmc_manfid = card->cid.manfid;
+	emmc_product_name = card->cid.prod_name[0];
+	emmc_rpmb_size = card->ext_csd.raw_rpmb_size_mult;
+
+	printk("[Steven][Kernel] %s, line=%d, emmc_manfid = 0x%x, emmc_product_name = 0x0%x", __func__, __LINE__, emmc_manfid, emmc_product_name);
+	if(emmc_manfid == SAMSUNG_EMMC_CHIP)
+	{
+		if(emmc_product_name == SAMSUNG_2G_PRODUCT_NAME)
+			seq_printf(m, "Samsung KMQE10013M_B318,16GB+2GB\n");   
+		else      
+			seq_printf(m, "Samsung KMQE10013M_B318,16GB+2GB\n"); 
+	}
+	else
+	{
+		seq_printf(m, "Micron MT29TZZZ5D6EKFRL,16GB+2GB\n");          
+	}
+
+	return 0;  
+}
+
+static int proc_emmc_vendor_open(struct inode *inode, struct file *file)
+{
+    return single_open(file, proc_emmc_vendor_show, NULL);
+}
+
+static const struct file_operations proc_emmc_vendor_fops = {
+    .open = proc_emmc_vendor_open,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = single_release,
+};
+
+void msdc_proc_emmc_vendor_create(void)
+{
+	proc_emmc_vendor = proc_create( "emmc_vendor", 0, NULL, &proc_emmc_vendor_fops);
+}
+
 /*--------------------------------------------------------------------------*/
 /* module init/exit                                                         */
 /*--------------------------------------------------------------------------*/
@@ -9476,6 +9543,8 @@ static int __init mt_msdc_init(void)
 		pr_err(DRV_NAME ": Can't register driver");
 		return ret;
 	}
+
+	msdc_proc_emmc_vendor_create();
 
 	pr_debug(DRV_NAME ": MediaTek MSDC Driver\n");
 
