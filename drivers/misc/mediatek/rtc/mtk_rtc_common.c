@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2010 MediaTek, Inc.
- *
+ * Copyright (C) 2015 Sony Mobile Communications Inc.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -59,6 +59,7 @@
 /* #include <mach/mt6577_reg_base.h> */
 #include <mtk_rtc.h>
 #include <mtk_rtc_hal_common.h>
+#include <mtk_rtc_tickstamp.h>
 #include <mach/mtk_rtc_hal.h>
 /* #include <mach/pmic_mt6320_sw.h> */
 #include <upmu_common.h>
@@ -571,6 +572,27 @@ static void rtc_reset_to_deftime(struct rtc_time *tm)
 }
 #endif
 
+static unsigned long rtc_get_monotonic_tick(void)
+{
+	unsigned long tick, flags;
+	struct rtc_time tm;
+
+	spin_lock_irqsave(&rtc_lock, flags);
+	hal_rtc_get_tick_time(&tm);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+
+	tm.tm_year += RTC_MIN_YEAR_OFFSET;
+	tm.tm_mon--;
+	rtc_tm_to_time(&tm, &tick);
+
+	return tick;
+}
+
+static void rtc_init_tick_stamp(void)
+{
+	ts_init(rtc_get_monotonic_tick);
+}
+
 static int rtc_ops_read_time(struct device *dev, struct rtc_time *tm)
 {
 	unsigned long time, flags;
@@ -601,7 +623,7 @@ static int rtc_ops_read_time(struct device *dev, struct rtc_time *tm)
 
 static int rtc_ops_set_time(struct device *dev, struct rtc_time *tm)
 {
-	unsigned long time, flags;
+	unsigned long time, tick, flags;
 
 	rtc_tm_to_time(tm, &time);
 	if (time > (unsigned long)LONG_MAX)
@@ -614,9 +636,14 @@ static int rtc_ops_set_time(struct device *dev, struct rtc_time *tm)
 		  tm->tm_year + RTC_MIN_YEAR, tm->tm_mon, tm->tm_mday,
 		  tm->tm_hour, tm->tm_min, tm->tm_sec);
 
+	tick = rtc_get_monotonic_tick();
 	spin_lock_irqsave(&rtc_lock, flags);
 	hal_rtc_set_tick_time(tm);
 	spin_unlock_irqrestore(&rtc_lock, flags);
+
+	ts_stamp(tick);
+	if (!ts_set())
+		rtc_xerror("Failed to write tickstamp\n");
 
 	return 0;
 }
@@ -742,6 +769,28 @@ static struct rtc_class_ops rtc_ops = {
 	.ioctl = rtc_ops_ioctl,
 };
 
+static ssize_t rtc_show_monotonic(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	unsigned long tick;
+	unsigned long epoch;
+
+	tick = rtc_get_monotonic_tick();
+	ts_get(&epoch);
+	if (MAX_STAMP == epoch) {
+		/*
+		  Tick still not stamped.
+		  Ask the caller to try again later
+		*/
+		return -EAGAIN;
+	}
+	epoch = tick - epoch;
+
+	return sprintf(buf, "%lu\n", epoch);
+}
+
+static DEVICE_ATTR(rtc_monotonic, 0444, rtc_show_monotonic, NULL);
+
 static int rtc_pdrv_probe(struct platform_device *pdev)
 {
 	unsigned long flags;
@@ -762,6 +811,8 @@ static int rtc_pdrv_probe(struct platform_device *pdev)
 	pmic_register_interrupt_callback(RTC_INTERRUPT_NUM, rtc_irq_handler);
 	pmic_enable_interrupt(RTC_INTERRUPT_NUM, 1, "RTC");
 #endif
+
+	device_create_file(&pdev->dev, &dev_attr_rtc_monotonic);
 
 	return 0;
 }
@@ -808,6 +859,7 @@ static int __init rtc_device_init(void)
 	hal_rtc_set_gpio_32k_status(0, true);
 #endif
 
+	rtc_init_tick_stamp();
 
 	return 0;
 }
