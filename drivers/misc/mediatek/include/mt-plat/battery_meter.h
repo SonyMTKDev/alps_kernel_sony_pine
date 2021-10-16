@@ -334,6 +334,7 @@ typedef enum {
 	FG_DAEMON_CMD_SET_HWSOC,
 	FG_DAEMON_CMD_SET_VBATSOC,
 	FG_DAEMON_CMD_SET_CAR_TUNE_VALUE,
+	FG_DAEMON_CMD_SET_AGING_FACTOR,
 	FG_DAEMON_CMD_GET_ZCV_INT_HW_OCV,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
@@ -382,6 +383,12 @@ extern signed int battery_meter_get_charging_current_imm(void);
 extern signed int battery_meter_get_charging_current(void);
 extern signed int battery_meter_get_battery_current(void);
 extern kal_bool battery_meter_get_battery_current_sign(void);
+#ifdef CONFIG_CHARGER_QNS
+extern signed int battery_meter_get_battery_current_now(void);
+extern signed int battery_meter_get_qmax(void);
+extern signed int battery_meter_get_design_qmax(void);
+extern signed int battery_meter_get_battery_id(void);
+#endif
 extern signed int battery_meter_get_car(void);
 extern signed int battery_meter_get_battery_temperature(void);
 extern signed int battery_meter_get_charger_voltage(void);

@@ -31,6 +31,11 @@
 #define SHUTDOWN_SYSTEM_VOLTAGE		(3400)
 #endif
 
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+#define BATTERY_DESIGN_CAPACITY 2620
+#define BATTERY_DESIGN_CAPACITY_90_PERCENT (BATTERY_DESIGN_CAPACITY * 90 / 100)
+#endif
+
 /*****************************************************************************
  *  BATTERY TIMER
  ****************************************************************************/
@@ -38,6 +43,9 @@
 /* #define MAX_CHARGING_TIME                   8*60*60   // 8hr */
 /* #define MAX_CHARGING_TIME                   12*60*60  // 12hr */
 #define MAX_CHARGING_TIME                   (24*60*60)	/* 24hr */
+
+#define AC_MAX_CHARGING_TIME                (6*60*60)	/* 6hr */
+#define USB_MAX_CHARGING_TIME               (100*60*60)	/* 100hr */
 
 #define MAX_POSTFULL_SAFETY_TIME		(1*30*60)/* 30mins */
 #define MAX_PreCC_CHARGING_TIME		(1*30*60)/* 0.5hr */
@@ -73,6 +81,10 @@
 #define  CHR_BATFULL                    (0x1004)
 #define  CHR_ERROR                      (0x1005)
 #define  CHR_HOLD						(0x1006)
+
+#if defined(CONFIG_STOP_CHARGING_IN_DEMOAPP)
+#define  CHR_HOLD_DEMO					(0x1007)
+#endif
 
 /*****************************************************************************
  *  CallState
@@ -125,6 +137,28 @@ typedef enum {
     -10~0     200mA         200mA             4V                  3.9V                <-10(Down) >6(Up)
     <-10      no charging current,              X                    X                    >-10(Up)
 ****************************************************************************/
+#if defined(JEITA_SONY_CONFIG)
+typedef enum {
+	TEMP_BELOW_POS_5 = 0,
+	TEMP_POS_5_TO_POS_10,
+	TEMP_POS_10_TO_POS_45,
+	TEMP_POS_45_TO_POS_55,
+	TEMP_ABOVE_POS_55
+} temp_state_enum;
+
+#define TEMP_POS_55_THRESHOLD  55
+#define TEMP_POS_55_THRES_MINUS_X_DEGREE 54
+
+#define TEMP_POS_45_THRESHOLD  45
+#define TEMP_POS_45_THRES_MINUS_X_DEGREE 44
+
+#define TEMP_POS_10_THRESHOLD  10
+#define TEMP_POS_10_THRES_PLUS_X_DEGREE 11
+
+#define TEMP_POS_5_THRESHOLD  5
+#define TEMP_POS_5_THRES_PLUS_X_DEGREE 6
+
+#else
 typedef enum {
 	TEMP_BELOW_NEG_10 = 0,
 	TEMP_NEG_10_TO_POS_0,
@@ -156,6 +190,7 @@ typedef enum {
 #else
 #define TEMP_NEG_10_THRESHOLD  0
 #define TEMP_NEG_10_THRES_PLUS_X_DEGREE  0
+#endif
 #endif
 
 /*****************************************************************************
@@ -197,7 +232,11 @@ typedef struct {
 	kal_bool bat_full;
 	signed int bat_charging_state;
 	unsigned int bat_vol;
+#if defined(CHARGING_MAINTAIN)
+	kal_bool bat_in_maintain_state;
+#else
 	kal_bool bat_in_recharging_state;
+#endif
 	unsigned int Vsense;
 	kal_bool charger_exist;
 	unsigned int charger_vol;
@@ -213,19 +252,40 @@ typedef struct {
 	unsigned int CC_charging_time;
 	unsigned int TOPOFF_charging_time;
 	unsigned int POSTFULL_charging_time;
+#if defined(CHARGING_MAINTAIN)
+	unsigned int MAINTAIN_charging_time;
+#endif
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+	unsigned int SOFTCHARE3_0_total_charging_time;
+	unsigned int SOFTCHARE3_0_40_init_time;
+	unsigned int SOFTCHARE3_0_40_charging_time;
+	unsigned int SOFTCHARE3_0_30_init_time;
+	unsigned int SOFTCHARE3_0_30_charging_time;
+	unsigned int SOFTCHARE3_0_20_init_time;
+	unsigned int SOFTCHARE3_0_20_charging_time;
+	signed int SOFTCHARE3_0_average_fcc_mah;
+	signed int SOFTCHARE3_0_fcc_mah[5];
+	signed int SOFTCHARE3_0_aged_fcc_mah[5];
+#endif
 	unsigned int charger_type;
 	signed int SOC;
 	signed int UI_SOC;
 	signed int UI_SOC2;
+	signed int FAKE_UI_SOC;
 	unsigned int nPercent_ZCV;
 	unsigned int nPrecent_UI_SOC_check_point;
 	unsigned int ZCV;
+	unsigned int charging_timer;
+	unsigned int PD_CHARGER_CHECK_count;
 } PMU_ChargerStruct;
 
 struct battery_custom_data {
 	/* mt_charging.h */
 	/* stop charging while in talking mode */
 	int stop_charging_in_takling;
+#if defined(CONFIG_STOP_CHARGING_IN_DEMOAPP)
+	int stop_charging_in_demoapp;
+#endif
 	int talking_recharge_voltage;
 	int talking_sync_time;
 

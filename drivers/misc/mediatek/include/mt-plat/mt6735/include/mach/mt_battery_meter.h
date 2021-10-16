@@ -52,6 +52,17 @@
 #define FG_METER_RESISTANCE 0
 
 /* Qmax for battery  */
+#if 1
+#define Q_MAX_POS_50 2704
+#define Q_MAX_POS_25 2663
+#define Q_MAX_POS_0 2565
+#define Q_MAX_NEG_10 2438
+
+#define Q_MAX_POS_50_H_CURRENT 2687
+#define Q_MAX_POS_25_H_CURRENT 2637
+#define Q_MAX_POS_0_H_CURRENT 2184
+#define Q_MAX_NEG_10_H_CURRENT 1725
+#else
 #define Q_MAX_POS_50 1463
 #define Q_MAX_POS_25 1437
 #define Q_MAX_POS_0 1220
@@ -61,7 +72,7 @@
 #define Q_MAX_POS_25_H_CURRENT 1462
 #define Q_MAX_POS_0_H_CURRENT 818
 #define Q_MAX_NEG_10_H_CURRENT 149
-
+#endif
 
 /* Discharge Percentage */
 #define OAM_D5		 1		/*  1 : D5,   0: D2*/
@@ -82,8 +93,11 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
+#if 1
+#define CAR_TUNE_VALUE 102
+#else
 #define CAR_TUNE_VALUE 86 /*1.00*/
-
+#endif
 
 /* HW Fuel gague  */
 #define CURRENT_DETECT_R_FG 10  /*1mA*/
@@ -100,11 +114,20 @@
 #define DIFFERENCE_VOLTAGE_UPDATE	20
 #define AGING1_LOAD_SOC			70
 #define AGING1_UPDATE_SOC		30
+#if 1
+#define BATTERYPSEUDO100		98
+#define BATTERYPSEUDO1			2
+#else
 #define BATTERYPSEUDO100		95
 #define BATTERYPSEUDO1			4
+#endif
 
 /* #define Q_MAX_BY_SYS */
+#if 1
+#define Q_MAX_SYS_VOLTAGE		3350
+#else
 #define Q_MAX_SYS_VOLTAGE		3300
+#endif
 #define SHUTDOWN_GAUGE0
 #define SHUTDOWN_GAUGE1_XMINS
 #define SHUTDOWN_GAUGE1_MINS		60
@@ -150,6 +173,8 @@
 */
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC
+
+#define MTK_MULTI_BAT_PROFILE_SUPPORT
 
 #elif defined(CONFIG_ARCH_MT6735M)
 /* ============================================================

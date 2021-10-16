@@ -59,6 +59,8 @@
 /* ============================================================ */
 /* define */
 /* ============================================================ */
+#define CHARGING_MAINTAIN
+
 /*****************************************************************************
  *  Log
  ****************************************************************************/
@@ -142,6 +144,11 @@ typedef enum {
 	CHARGING_CMD_RUN_AICL,
 	CHARGING_CMD_SET_IRCMP_RESISTOR,
 	CHARGING_CMD_SET_IRCMP_VOLT_CLAMP,
+#if defined(CHARGING_MAINTAIN)
+	CHARGING_CMD_ENABLE_TE_SHUTDOWN,
+#endif
+	CHARGING_CMD_GET_VINOVPI,
+	CHARGING_CMD_GET_IS_CHARGING,
 	CHARGING_CMD_ENABLE_DC_VBUSOV,
 	CHARGING_CMD_SET_DC_VBUSOV,
 	CHARGING_CMD_ENABLE_DC_VBUSOC,
