@@ -111,7 +111,7 @@ static int cycle_value[] = {1, 2, 4, 8, 16, 32, 64};
 #define EPL_T_EN         1
 #define EPL_T_DIS        0
 
-#define EPL_PS_PRE          (0 << 6)
+#define EPL_PS_PRE          (0 << 6) //epl update driver, 161202
 #define EPL_PS_STD          (1 << 6)
 
 #define EPL_ALS_PRE          (0 << 5)
