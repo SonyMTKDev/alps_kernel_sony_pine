@@ -59,6 +59,7 @@ stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX214_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{IMX214_MONO_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{S5K5E2YA_SENSOR_ID, 0x00, CMD_MAIN, cam_cal_check_double_eeprom},
+	{S5K5E2YB_SENSOR_ID, 0x00, CMD_MAIN, cam_cal_check_double_eeprom},
 	{S5K2X8_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{IMX377_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 
@@ -68,6 +69,7 @@ stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*{S5K5E8YX_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},Dream: sub2 for 4cam*/
 
 	{S5K5E2YA_SENSOR_ID, 0x00, CMD_MAIN, cam_cal_check_double_eeprom},
+	{S5K5E2YB_SENSOR_ID, 0x00, CMD_MAIN, cam_cal_check_double_eeprom},
 
 	{IMX338_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},/*O main */
 	{OV8858_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},/*O sub */
