@@ -58,9 +58,6 @@ int aee_mode = AEE_MODE_NOT_INIT;
 static int force_red_screen = AEE_FORCE_NOT_SET;
 int aee_force_exp = 0;
 
-/* use ke_log_available to control aed_ke_poll */
-static int ke_log_available = 1;
-
 static struct proc_dir_entry *aed_proc_dir;
 
 #define MaxStackSize 8100
@@ -591,12 +588,10 @@ static int ke_gen_ind_msg(struct aee_oops *oops)
 		rep_msg->dbOption = oops->dump_option;
 
 		init_completion(&aed_ke_com);
-		/* kernel api log is safe to access by child debuggerd from here */
-		ke_log_available = 1;
 		wake_up(&aed_dev.kewait);
 		/* wait until current ke work is done, then aed_dev is available,
 		   add a 60s timeout in case of debuggerd quit abnormally */
-		if (!wait_for_completion_timeout(&aed_ke_com, msecs_to_jiffies(5 * 60 * 1000)))
+		if (wait_for_completion_timeout(&aed_ke_com, msecs_to_jiffies(5 * 60 * 1000)))
 			LOGE("%s: TIMEOUT, not receive close event, skip\n", __func__);
 	}
 	return 0;
@@ -928,7 +923,7 @@ static void ee_gen_ind_msg(struct aed_eerec *eerec)
 		return;
 
 	rep_msg->cmdType = AE_IND;
-	rep_msg->cmdId = AE_IND_EXP_RAISED;
+	rep_msg->cmdId = AE_IND_FATAL_RAISED;
 	rep_msg->arg = AE_EE;
 	rep_msg->len = 0;
 	rep_msg->dbOption = eerec->db_opt;
@@ -1108,7 +1103,7 @@ static int aed_ke_release(struct inode *inode, struct file *filp)
 
 static unsigned int aed_ke_poll(struct file *file, struct poll_table_struct *ptable)
 {
-	if (ke_log_available && ke_log_avail())
+	if (ke_log_avail())
 		return POLLIN | POLLRDNORM | POLLOUT | POLLWRNORM;
 	poll_wait(file, &aed_dev.kewait, ptable);
 	return 0;
@@ -1282,7 +1277,6 @@ static ssize_t aed_ke_write(struct file *filp, const char __user *buf, size_t co
 		switch (msg.cmdId) {
 		case AE_IND_LOG_CLOSE:
 			/* real release operation move to ke_worker(): ke_destroy_log(); */
-			ke_log_available = 0;
 			complete(&aed_ke_com);
 			break;
 		default:
@@ -1912,8 +1906,8 @@ static void external_exception(const char *assert_type, const int *log, int log_
 
 	LOGD("%s : [%s] log ptr %p size %d, phy ptr %p size %d\n", __func__,
 	     assert_type, log, log_size, phy, phy_size);
-	if ((aee_mode >= AEE_MODE_CUSTOMER_USER) && (!aee_force_exp))
-		return;
+	//if ((aee_mode >= AEE_MODE_CUSTOMER_USER) && (!aee_force_exp))
+	//	return;
 	eerec = kzalloc(sizeof(struct aed_eerec), GFP_ATOMIC);
 	if (eerec == NULL) {
 		LOGE("%s: kmalloc fail", __func__);

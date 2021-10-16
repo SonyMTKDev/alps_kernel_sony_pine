@@ -52,7 +52,7 @@ static int crashing_cpu;
 
 static note_buf_t __percpu *crash_notes;
 
-static bool mrdump_enable = 1;
+static bool mrdump_enable;
 static unsigned long mrdump_output_lbaooo;
 
 static const struct mrdump_platform *mrdump_plat;
@@ -314,11 +314,13 @@ int __init mrdump_platform_init(const struct mrdump_platform *plat)
 		return -EINVAL;
 	}
 
+#if 0
 	if (strcmp(mrdump_lk, MRDUMP_GO_DUMP) != 0) {
 		mrdump_enable = 0;
 		pr_err("%s: MT-RAMDUMP init failed, lk version %s not matched.\n", __func__, mrdump_lk);
 		return -EINVAL;
 	}
+#endif
 
 	/* move default enable MT-RAMDUMP to late_init (this function) */
 	if (mrdump_enable) {

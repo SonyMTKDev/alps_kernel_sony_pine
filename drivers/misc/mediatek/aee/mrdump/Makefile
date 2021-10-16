@@ -16,8 +16,8 @@ obj-$(CONFIG_MTK_AEE_FEATURE)	+= mrdump_hw.o
 endif
 
 ifeq ($(CONFIG_MTK_AEE_MRDUMP),y)
-obj-y += mrdump.o
-mrdump-y := mrdump_full.o mrdump_setup.o
+obj-y += ramdump.o
+ramdump-y := mrdump_full.o mrdump_setup.o
 obj-$(CONFIG_ARM) += mrdump_arm.o
 obj-$(CONFIG_ARM64) += mrdump_arm64.o
 endif

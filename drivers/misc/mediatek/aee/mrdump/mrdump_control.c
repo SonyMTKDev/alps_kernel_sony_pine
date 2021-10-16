@@ -23,7 +23,7 @@
 struct mrdump_control_block mrdump_cblock __attribute__((section(".mrdump")));
 
 #ifdef CONFIG_MTK_AEE_MRDUMP
-mrdump_rsvmem_block_t __initdata rsvmem_block[16];
+mrdump_rsvmem_block_t __initdata rsvmem_block[4];
 
 static __init char *find_next_mrdump_rsvmem(char *p, int len)
 {
@@ -47,37 +47,28 @@ static int __init early_mrdump_rsvmem(char *p)
 	unsigned long start_addr, size;
 	int ret;
 	char *tmp_p = p;
-	int i = 0;
-	int max_count = sizeof(rsvmem_block)/sizeof(mrdump_rsvmem_block_t);
+	int i;
 
-	while (1) {
-		if (max_count <= 0)
-			break;
+	for (i = 0; i < 4; i++) {
 		ret = sscanf(tmp_p, "0x%lx,0x%lx", &start_addr, &size);
 		if (ret != 2) {
 			pr_alert("%s:%s reserve failed ret=%d\n", __func__, p, ret);
 			return 0;
 		}
 
-		if (start_addr == 0 || size == 0) {
-			pr_alert("%s:i=%d start_addr = 0x%lx size=0x%lx skip\n", __func__, i, start_addr, size);
-			continue;
-		}
 		rsvmem_block[i].start_addr = start_addr;
 		rsvmem_block[i].size = size;
-		i++;
-		max_count--;
 		tmp_p = find_next_mrdump_rsvmem(tmp_p, strlen(tmp_p));
 		if (!tmp_p)
 			break;
 	}
-
+/*
 	for (i = 0; i < sizeof(rsvmem_block)/sizeof(mrdump_rsvmem_block_t); i++) {
 		if (rsvmem_block[i].start_addr)
 			pr_err(" mrdump region start = %pa size =%pa\n",
-						&rsvmem_block[i].start_addr, &rsvmem_block[i].size);
+						&rsvmem_block[i].start_addr,&mrdump_rsvmem_block[i].size);
 	}
-
+*/
 	return 0;
 }
 
@@ -98,7 +89,7 @@ __init void mrdump_rsvmem(void)
 			       mrdump_enable = 0;
 #endif
 
-				pr_warn(" mrdump region start = %pa size =%pa is reserved already\n",
+				pr_err(" mrdump region start = %pa size =%pa is reserved already\n",
 						&rsvmem_block[i].start_addr, &rsvmem_block[i].size);
 			}
 		}
@@ -106,7 +97,6 @@ __init void mrdump_rsvmem(void)
 }
 
 early_param("mrdump_rsvmem", early_mrdump_rsvmem);
-#endif
 
 extern const unsigned long kallsyms_addresses[] __weak;
 extern const u8 kallsyms_names[] __weak;

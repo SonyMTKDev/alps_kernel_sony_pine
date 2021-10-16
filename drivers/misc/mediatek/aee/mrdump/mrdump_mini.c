@@ -564,7 +564,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 {
 #define MAX_STACK_TRACE_DEPTH 32
 	unsigned long ipanic_stack_entries[MAX_STACK_TRACE_DEPTH];
-	char symbol[96];
+	char symbol[128];
 	int sz;
 	int off, plen;
 	struct stack_trace trace;
@@ -586,6 +586,11 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 	cur_proc = (struct aee_process_info *)((void *)mrdump_mini_ehdr + MRDUMP_MINI_HEADER_SIZE);
 	/* Current panic user tasks */
 	sz = 0;
+
+	if (tsk && tsk->group_leader && tsk != tsk->group_leader)
+		sz += snprintf(symbol + sz, 128 - sz, "[groupleader(%s, %d)]", tsk->group_leader->comm, \
+			tsk->group_leader->pid);
+
 	do {
 		if (!tsk) {
 			LOGE("No tsk info\n");
@@ -593,7 +598,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 			break;
 		}
 		/* FIXME: Check overflow ? */
-		sz += snprintf(symbol + sz, 96 - sz, "[%s, %d]", tsk->comm, tsk->pid);
+		sz += snprintf(symbol + sz, 128 - sz, "[%s, %d]", tsk->comm, tsk->pid);
 		previous = tsk;
 		tsk = tsk->real_parent;
 		if (!virt_addr_valid(tsk)) {
