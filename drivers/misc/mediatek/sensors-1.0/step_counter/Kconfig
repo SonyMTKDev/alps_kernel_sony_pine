@@ -10,6 +10,6 @@ config CUSTOM_KERNEL_SIGNIFICANT_MOTION
 	help
 	  Kernel space sigificant motion sensor driver.
 
-source "drivers/misc/mediatek/step_counter/bma4xy_stc/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/step_counter/bma4xy_stc/Kconfig"
 
 source "drivers/misc/mediatek/sensors-1.0/step_counter/stepsignhub/Kconfig"
