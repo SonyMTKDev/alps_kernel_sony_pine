@@ -12,5 +12,6 @@
 #
 
 #obj-$(CONFIG_NFC_MT6605)   += mt6605.o
-obj-y   += mt6605.o
+#obj-y   += mt6605.o
 ccflags-$(CONFIG_NFC_MT6605) +=  -DDEBUG
+obj-$(CONFIG_PN553_NFC)    += pn553.o

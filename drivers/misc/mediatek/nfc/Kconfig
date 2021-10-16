@@ -33,3 +33,15 @@ config NFC_CHIP_SUPPORT
 	depends on I2C
 	help
 	  STMicroelectronics ST21NFC Near Field Communication controller support.
+
+menuconfig ARIMA_NFC
+	tristate "NXP NFC drivers"
+	default n
+	---help---
+	  Say Y here for supporting NFC.
+
+if ARIMA_NFC
+config PN553_NFC 
+	tristate "NXP PN553 NFC driver"
+	default n
+endif
