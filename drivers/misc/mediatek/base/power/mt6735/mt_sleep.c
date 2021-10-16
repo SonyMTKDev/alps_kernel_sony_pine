@@ -181,7 +181,7 @@ static int enter_pasrdpd(void)
 	int error = 0;
 	u32 sr = 0, dpd = 0;
 
-	slp_crit2("@@@[%s]@@@\n", __func__);
+	/*slp_crit2("@@@[%s]@@@\n", __func__);*/
 
 	/* Setup SPM wakeup event firstly */
 	spm_set_wakeup_src_check();
@@ -209,7 +209,7 @@ static int enter_pasrdpd(void)
 static void leave_pasrdpd(void)
 {
 
-	slp_crit2("@@@[%s]@@@\n", __func__);
+	/*slp_crit2("@@@[%s]@@@\n", __func__);*/
 
 
 	/* Disable PASR */

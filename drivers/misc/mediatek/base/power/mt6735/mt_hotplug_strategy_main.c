@@ -47,7 +47,11 @@ struct hps_ctxt_struct hps_ctxt = {
 	.state = STATE_LATE_RESUME,
 
 	/* enabled */
+#if 1
+	.enabled = 0,
+#else
 	.enabled = 1,
+#endif
 	.suspend_enabled = 1,
 	.cur_dump_enabled = 0,
 	.stats_dump_enabled = 0,

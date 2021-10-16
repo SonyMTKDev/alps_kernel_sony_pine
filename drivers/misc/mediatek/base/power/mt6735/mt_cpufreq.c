@@ -3993,9 +3993,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		cpufreq_info("@%s: limited_power_idx = %d\n", __func__, p->limited_power_idx);
 
-#ifdef CONFIG_MT_BOOT_TIME_CPU_BOOST
 		p->limited_min_freq_by_kdriver = cpu_dvfs_get_max_freq(p);
-#endif
 
 #ifdef CONFIG_CPU_DVFS_POWER_THROTTLING
 		register_battery_percent_notify(
@@ -4065,7 +4063,7 @@ static void _mt_cpufreq_lcm_status_switch(int onoff)
 		_allow_dpidle_ctrl_vproc = false;
 
 		for_each_cpu_dvfs(i, p) {
-			if (!cpu_dvfs_is_available(p))
+			if (!cpu_dvfs_is_available(p) || !p->dvfs_disable_by_early_suspend)
 				continue;
 
 			p->dvfs_disable_by_early_suspend = false;
