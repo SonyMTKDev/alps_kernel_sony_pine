@@ -58,6 +58,10 @@ static const struct of_device_id cmdq_of_ids[] = {
 };
 #endif
 
+#define CMDQ_MAX_DUMP_REG_COUNT (2048)
+#define CMDQ_MAX_COMMAND_SIZE		(0x10000)
+#define CMDQ_MAX_WRITE_ADDR_COUNT	(PAGE_SIZE / sizeof(u32))
+
 static dev_t gCmdqDevNo;
 static struct cdev *gCmdqCDev;
 static struct class *gCMDQClass;
@@ -727,6 +731,13 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			if (copy_from_user(&addrReq, (void *)param, sizeof(addrReq))) {
 				CMDQ_ERR("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS copy_from_user failed\n");
 				return -EFAULT;
+			}
+
+			if (!addrReq.count || addrReq.count > CMDQ_MAX_WRITE_ADDR_COUNT) {
+				CMDQ_ERR(
+					"CMDQ_IOCTL_ALLOC_WRITE_ADDRESS invalid alloc write addr count:%u\n",
+					addrReq.count);
+				return -EINVAL;
 			}
 
 			status = cmdqCoreAllocWriteAddress(addrReq.count, &paStart);

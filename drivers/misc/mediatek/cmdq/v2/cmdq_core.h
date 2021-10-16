@@ -114,7 +114,6 @@ else								\
 /* max count of regs */
 #define CMDQ_MAX_COMMAND_SIZE		(0x10000)
 #define CMDQ_MAX_DUMP_REG_COUNT		(2048)
-#define CMDQ_MAX_WRITE_ADDR_COUNT	(PAGE_SIZE / sizeof(u32))
 #define CMDQ_MAX_DBG_STR_LEN		1024
 
 #ifdef CMDQ_DUMP_FIRSTERROR
