@@ -37,6 +37,7 @@ mainaf-y  += common/fm50af/FM50AF.o
 mainaf-y  += common/bu6424af/BU6424AF.o
 mainaf-y  += common/bu6429af/BU6429AF.o
 mainaf-y  += common/dw9714af/DW9714AF.o
+mainaf-y  += common/dw9714taf/
 mainaf-y  += common/dw9814af/DW9814AF.o
 mainaf-y  += common/dw9718af/DW9718AF.o
 mainaf-y  += common/dw9718saf/DW9718SAF.o
