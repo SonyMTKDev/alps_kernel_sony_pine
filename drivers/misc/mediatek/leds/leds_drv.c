@@ -430,6 +430,11 @@ int backlight_brightness_set(int level)
 
 }
 EXPORT_SYMBOL(backlight_brightness_set);
+
+extern ssize_t ktd2037_config_save(struct device *dev,struct device_attribute *attr, const char *buf, size_t count);
+extern ssize_t ktd2037_config_show(struct device *dev, struct device_attribute *attr, char *buf);
+static DEVICE_ATTR(config, 0664, ktd2037_config_show, ktd2037_config_save);
+
 #if 0
 static ssize_t show_duty(struct device *dev, struct device_attribute *attr,
 			 char *buf)
@@ -689,6 +694,14 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 		INIT_WORK(&g_leds_data[i]->work, mt_mt65xx_led_work);
 
 		ret = led_classdev_register(&pdev->dev, &g_leds_data[i]->cdev);
+
+		if (strcmp(g_leds_data[i]->cdev.name, "rgb") == 0) {
+			ret = device_create_file(g_leds_data[i]->cdev.dev, &dev_attr_config);
+			if (ret) {
+				LEDS_DRV_DEBUG("%s device_create_file config fail!\n", __func__);
+			}
+		}
+
 		#if 0
 		if (strcmp(g_leds_data[i]->cdev.name, "lcd-backlight") == 0) {
 			rc = device_create_file(g_leds_data[i]->cdev.dev,

@@ -49,6 +49,7 @@
 #include "leds_hal.h"
 #include "ddp_pwm.h"
 #include "mtkfb.h"
+#include "ktd2037.h"
 
 /* for LED&Backlight bringup, define the dummy API */
 #ifndef CONFIG_MTK_PMIC
@@ -96,6 +97,7 @@ char *leds_name[MT65XX_LED_TYPE_TOTAL] = {
 	"keyboard-backlight",
 	"button-backlight",
 	"lcd-backlight",
+	"rgb",
 };
 
 struct cust_mt65xx_led *pled_dtsi = NULL;
@@ -793,6 +795,8 @@ int mt_brightness_set_pmic_duty_store(u32 level, u32 div)
 	return -1;
 }
 
+extern int ktd2037_rgb_led_set(enum ktd2037_led_color led_color, u8 led_brightness);
+
 int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 {
 	struct nled_setting led_tmp_setting = { 0, 0, 0 };
@@ -802,6 +806,16 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 	    Cust_GetBacklightLevelSupport_byPWM();
 
 	switch (cust->mode) {
+
+	case MT65XX_LED_MODE_CUST_RGB:
+		if (strcmp(cust->name, "red") == 0) {
+			ktd2037_rgb_led_set(LED_RED, level);
+		} else if (strcmp(cust->name, "green") == 0) {
+			ktd2037_rgb_led_set(LED_GRN, level);
+		} else if (strcmp(cust->name, "blue") == 0) {
+			ktd2037_rgb_led_set(LED_BLU, level);
+		}
+		break;
 
 	case MT65XX_LED_MODE_PWM:
 		if (strcmp(cust->name, "lcd-backlight") == 0) {
@@ -902,10 +916,29 @@ void mt_mt65xx_led_work(struct work_struct *work)
 	mutex_unlock(&leds_mutex);
 }
 
+static int sony_backlight_map_table[255]=
+	{1	,2	,3	,4	,5	,6	,7	,8	,9	,10	,10	,10	,11	,11	,11	,12	,
+	12	,13	,13	,13,14	,14	,14	,15	,15	,15	,16	,16	,16	,17	,17	,18	,
+	18	,18	,19	,19	,19	,20	,20	,20	,20	,20	,20	,21	,21	,21	,21	,21	,
+	21	,22	,22	,22	,22	,22	,22	,23	,23	,23	,23	,23	,23	,24	,24	,24	,
+	24	,24	,24	,25	,25	,25	,25	,25	,26	,26	,26	,26	,26	,27	,27	,27	,
+	27	,28	,28	,28	,28	,29	,29	,29	,30	,30	,30	,31	,31	,31	,32	,32	,
+	32	,33	,33	,34   ,34  ,35	,35	,36	,36	,37	,37	,38	,38	,39	,39	,40	,
+	40	,41	,41	,42   ,42	,43	,43	,44	,44	,45	,45	,46	,47	,48	,49	,50	,
+	51	,52	,53	,54	,55	,56	,57	,58	,59	,60	,61	,62	,63	,64	,65	,66	,
+	67	,68	,69	,70	,71	,72	,73	,74	,75	,76	,77	,78	,79	,80	,81	,82	,
+	83	,84	,85	,86	,87	,88	,89	,90	,91	,92	,93	,94	,95	,96,97,98,
+	99,100	,101,102,103,104,105,107,108,110,112,113,115,117,118,120,
+	122,123	,125,127,128,130,132,133,135,137,138,140,142,143,145,147,
+	149,151 ,153,154,156,158,160,162,164,166,168,171,173,175,177,179,
+	181,183	,185,187,189,192,194,196,198,201,203,206,209,212,215,218,
+	221,224	,227,230,233,235,238,240,242,244,246,248,250,252,255};
+
 void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 {
 	struct mt65xx_led_data *led_data =
 	    container_of(led_cdev, struct mt65xx_led_data, cdev);
+       int vRet = 0;
 	/* unsigned long flags; */
 	/* spin_lock_irqsave(&leds_lock, flags); */
 
@@ -964,6 +997,16 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 							    - 1) * level +
 							   127) / 255);
 			if (MT65XX_LED_MODE_CUST_BLS_PWM == led_data->cust.mode) {
+			if(level==0){
+                             vRet =0;
+			       }
+			else if(level>255){
+				 vRet =255;
+				}
+			else{
+			vRet = sony_backlight_map_table[level-1];
+				}
+			level = vRet;
 				mt_mt65xx_led_set_cust(&led_data->cust,
 						       ((((1 <<
 							   MT_LED_INTERNAL_LEVEL_BIT_CNT)
