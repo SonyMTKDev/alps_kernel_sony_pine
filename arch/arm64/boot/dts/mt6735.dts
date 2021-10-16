@@ -1757,9 +1757,17 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt_soc_pcm_dl2";
 		};
 
+		rgb_ktd2037: rgb_ktd2037 {
+			compatible = "mediatek,ktd2037-platform";
+		};
+
 		touch: touch {
 			compatible = "mediatek,mt6735-touch";
 			vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;
+		};
+
+		hall_1: hall_1@2 {
+			compatible = "mediatek,mt6735-hall_1";
 		};
 
 		accdet: accdet {
@@ -1768,10 +1776,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 
 		nfc:nfc {
 			compatible = "mediatek,nfc-gpio-v2";
-			gpio-ven = <4>;
-			gpio-rst = <3>;
-			gpio-eint = <1>;
-			gpio-irq = <2>;
+			ven-gpio = <11>;
+			firm-gpio = <12>;
+			irq-gpio = <7>;
 		};
 
 		gps {
@@ -2982,6 +2989,31 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		dsi_te: dsi_te {
 			compatible = "mediatek, dsi_te_1-eint";
 			status = "disabled";
+		};
+		rt1711: type_c_port0 {
+			rt-dual,supported_modes = <2>; /* 0: dfp/ufp, 1: dfp, 2: ufp */
+			rt-tcpc,name = "type_c_port0"; /* tcpc_device's name */
+			rt-tcpc,role_def = <0>; /* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
+			rt-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
+			rt-tcpc,notifier_supply_num = <1>; /* the number of notifier supply */
+			rt1711,irq_gpio = <&pio 4 0x0>;
+			rt1711,irq_gpio_under_sp = <&pio 81 0x0>;
+			rt1711,pcba_ver0 = <&pio 58 0x0>;
+			rt1711,pcba_ver1 = <&pio 57 0x0>;
+			rt1711,pcba_ver2 = <&pio 86 0x0>;
+		};
+		type_c_port0_under_sp {
+			interrupt-parent = <&eintc>;
+			interrupts = <81 IRQ_TYPE_EDGE_FALLING>;
+			debounce = <81 0>;
+			status = "okay";
+		};
+
+		charging_ic_rt9458 {
+			interrupt-parent = <&eintc>;
+			interrupts = <3 IRQ_TYPE_EDGE_FALLING>;
+			debounce = <3 0>;
+			status = "okay";
 		};
 	};
 
