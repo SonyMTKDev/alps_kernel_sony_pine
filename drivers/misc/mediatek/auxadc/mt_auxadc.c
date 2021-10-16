@@ -1489,23 +1489,25 @@ static ssize_t store_AUXADC_channel(struct device *dev, struct device_attribute 
 
 	if (buf == NULL) {
 		pr_debug("[%s] Invalid input!!\n", __func__);
-		return size;
+		return 0;
 	}
 
 	ret = kstrtoint(buf, sizeof(int), &start_flag);
 	if (ret < 0) {
 		pr_debug("[%s] Invalid invalues!!\n", __func__);
-		return size;
+		return 0;
 	}
 
 	pr_debug("[adc_driver] start flag =%d\n", start_flag);
-	g_start_debug_thread = start_flag;
 	if (start_flag) {
+		g_start_debug_thread = start_flag;
 		thread = kthread_run(dbug_thread, 0, "AUXADC");
 		if (IS_ERR(thread)) {
 			error = PTR_ERR(thread);
 			pr_debug("[adc_driver] failed to create kernel thread: %d\n", error);
 		}
+	} else {
+		pr_debug("[%s] Invalid input!!\n", __func__);
 	}
 	return size;
 }
