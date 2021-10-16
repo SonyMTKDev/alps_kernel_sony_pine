@@ -33,6 +33,8 @@ obj-$(CONFIG_MTK_MAGHUB)        +=  maghub/
 obj-$(CONFIG_MTK_AKM09915_NEW)         +=  akm09915/
 obj-$(CONFIG_MTK_AKM09911)         +=  akm09911/
 obj-$(CONFIG_MTK_AKM8963)	+=  akm8963/
+obj-$(CONFIG_MTK_AKM09918_NEW)   +=  akm09918-new/
+obj-$(CONFIG_MTK_MMC3630X)	+=  mmc3630kj/
 # Vanzo:yucheng on: Mon, 13 Mar 2017 16:38:32 +0800
 # TODO: replace this line with your comment
 # added for new structure config alsps
