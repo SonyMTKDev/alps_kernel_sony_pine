@@ -20,7 +20,10 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/clk.h>
-
+#include <linux/input.h>
+#include <linux/interrupt.h>
+#include <linux/gpio.h>
+#include <linux/spinlock.h>
 #define KPD_NAME	"mtk-kpd"
 #define MTK_KP_WAKESOURCE	/* this is for auto set wake up source */
 
@@ -52,6 +55,43 @@ struct keypad_dts_data kpd_dts_data;
 #ifdef CONFIG_KPD_PWRKEY_USE_EINT
 static void kpd_pwrkey_handler(unsigned long data);
 static DECLARE_TASKLET(kpd_pwrkey_tasklet, kpd_pwrkey_handler, 0);
+#endif
+
+#define HALL_SENSOR_ENABLE 1
+
+static int mt_get_hall_sensor_gpio_value(int gpio_num)
+{
+	int value = 0;
+	//if (mt_nfc_get_gpio_dir(gpio_num) != MTK_NFC_GPIO_DIR_INVALID) {
+		value = __gpio_get_value(gpio_num);
+	//}
+	return value;
+}
+
+#if HALL_SENSOR_ENABLE
+#define TRIGGER_RISING    0x00000001
+#define TRIGGER_FALLING   0x00000002
+#define TRIGGER_HIGH      0x00000004
+#define TRIGGER_LOW       0x00000008
+#define HALL_GPIO         2
+#define HALL_POLARITY   mt_get_hall_sensor_gpio_value(HALL_GPIO)
+
+
+/*enum LID_STATE{
+	LID_OPEN,
+	LID_CLOSE,
+};*/
+
+//#define LID_OPEN TRIGGER_RISING
+#define LID_CLOSE TRIGGER_FALLING
+
+static void hall_handler(unsigned long data);
+static DECLARE_TASKLET(hall_tasklet, hall_handler, 0);
+static u8 chall_state =TRIGGER_LOW; //When power on, hall sensor lead to LID close
+//static u8 hall_state=1;
+//static u8 ohall_state = TRIGGER_RISING;
+
+static bool lid_state = 0; //Power key will not enable when LID closed begin
 #endif
 
 /* for keymap handling */
@@ -350,11 +390,141 @@ static void kpd_pwrkey_eint_handler(void)
 }
 #endif
 /*********************************************************************/
-
+/*			HALL sensor implementation	     	                     */
 /*********************************************************************/
+#if HALL_SENSOR_ENABLE
+struct of_device_id hall_of_match[] = {
+	{ .compatible = "mediatek,mt6735-hall_1", },
+	{},
+};
+
+int hirq_flag = 1;
+static spinlock_t hirq_flag_lock;
+unsigned int hall_irq = 0;
+
+/*1 enable,0 disable,touch_panel_eint default status, need to confirm after register eint*/
+void hall_irq_enable(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&hirq_flag_lock, flags);
+	if (hirq_flag == 0) {
+		hirq_flag = 1;
+		spin_unlock_irqrestore(&hirq_flag_lock, flags);
+		enable_irq(hall_irq);
+		printk("[hall_sensor] enable_irq\n");
+	} else if (hirq_flag == 1) {
+		spin_unlock_irqrestore(&hirq_flag_lock, flags);
+		printk("[hall_sensor] HALL Eint already enabled!");
+	} else {
+		spin_unlock_irqrestore(&hirq_flag_lock, flags);
+		printk("[hall_sensor] Invalid irq_flag %d!", hirq_flag);
+	}
+	/*GTP_INFO("Enable irq_flag=%d",irq_flag);*/
+}
+void hall_irq_disable(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&hirq_flag_lock, flags);
+	if (hirq_flag == 1) {
+		hirq_flag = 0;
+		spin_unlock_irqrestore(&hirq_flag_lock, flags);
+		//disable_irq(hall_irq);
+		disable_irq_nosync(hall_irq); 
+		printk("[hall_sensor] disable_irq\n");
+	} else if (hirq_flag == 0) {
+		spin_unlock_irqrestore(&hirq_flag_lock, flags);
+		printk("[hall_sensor] Eint already disabled!");
+	} else {
+		spin_unlock_irqrestore(&hirq_flag_lock, flags);
+		printk("[hall_sensor] Invalid irq_flag %d!", hirq_flag);
+	}
+	/*GTP_INFO("Disable irq_flag=%d",irq_flag);*/
+}
+
+//static void hall_eint_handler(void)
+static irqreturn_t hall_eint_handler(unsigned irq, struct irq_desc *desc)
+{
+	//mt_eint_mask(CUST_EINT_HALL_1_NUM);
+	hall_irq_disable();
+	//printk("[hall_sensor] GPIO=%x\n",mt_get_hall_sensor_gpio_value(HALL_GPIO));
+	//printk("[hall_sensor] HALL_POLARITY=%x\n",HALL_POLARITY);
+	tasklet_schedule(&hall_tasklet);
+	return IRQ_HANDLED;
+}
+
+static int hall_irq_registration(void)
+{
+	//mt_eint_registration(CUST_EINT_HALL_1_NUM, HALL_POLARITY, hall_eint_handler, false);
+	struct device_node *node = NULL;
+	int ret = 0;
+	u32 ints[2] = { 0, 0 };
+	//int false=0;
+	printk("[hall_sensor] irq_registration");
+	node = of_find_matching_node(node, hall_of_match);
+	if (node){
+	of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+	gpio_set_debounce(ints[0], ints[1]);
+	hall_irq = irq_of_parse_and_map(node, 0);
+	//hall_irq = irq_of_parse_and_map(node, 0);
+	ret=request_irq(hall_irq, (irq_handler_t) hall_eint_handler, IRQF_TRIGGER_LOW,"HALL_1-eint", NULL);//2015/11/30-zihweishen, When power on, hall sensor lead to LID close
+	 if (ret > 0){
+	 	ret = -1;
+		printk("[hall_sensor] request_irq IRQ LINE NOT AVAILABLE!.");
+		return -EIO;
+	 }
+	}
+    return ret;
+}
+
+static void hall_handler(unsigned long data)
+{
+	//struct device_node *node;
+	unsigned int hall_int_num=HALL_GPIO;
+	u8 old_state = chall_state;
+
+	lid_state = (chall_state==TRIGGER_LOW)?1:0; //When power on, hall sensor lead to LID close
+	printk( "[hall_sensor] Lid %s \n", (lid_state==1)?"close":"open");
+	//printk( "[hall_sensor] chall_state %x \n", chall_state);
+	//printk( "[hall_sensor] lid_state %d \n", lid_state);
+	//chall_state=ohall_state;
+
+	/* for SW_LID, 0: lid open => slid, 1: lid shut => closed */
+	if (chall_state==TRIGGER_LOW){ //When power on, hall sensor lead to LID close
+		//irq_set_irq_type(gpio_to_irq(hall_int_num), old_state);
+		input_report_switch(kpd_input_dev, SW_LID, 0);
+		input_sync(kpd_input_dev);
+		printk("[hall_sensor] SW_LID, 0\n");
+		//chall_state=ohall_state;
+		chall_state=TRIGGER_HIGH;
+	}
+	else{
+		//irq_set_irq_type(gpio_to_irq(hall_int_num), old_state);
+		input_report_switch(kpd_input_dev, SW_LID, 1);
+		input_sync(kpd_input_dev);
+		printk("[hall_sensor] SW_LID, 1\n");
+		chall_state=TRIGGER_LOW;
+	}
+	//mt_eint_set_polarity(CUST_EINT_HALL_1_NUM, old_state);
+	irq_set_irq_type(gpio_to_irq(hall_int_num), old_state);
+	//mt_eint_unmask(CUST_EINT_HALL_1_NUM);
+	//lid_state=0;
+	hall_irq_enable();
+}
+#endif /* CUST_EINT_HALL_1_NUM */
+
 #ifdef CONFIG_KPD_PWRKEY_USE_PMIC
 void kpd_pwrkey_pmic_handler(unsigned long pressed)
 {
+#if HALL_SENSOR_ENABLE	//Power key will not enable when LID closed
+	if(mt_get_hall_sensor_gpio_value(HALL_GPIO)==0)
+	{
+		printk("[hall_sensor] LID_CLOSE. Block power key action \n");
+		return;
+	}
+	printk("[hall_sensor] LID_CLOSE. Block power key action lid_state==%d\n",lid_state);
+#endif
 	kpd_print("Power Key generate, pressed=%ld\n", pressed);
 	if (!kpd_input_dev) {
 		kpd_print("KPD input device not ready\n");
@@ -869,6 +1039,10 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 	__set_bit(EV_SW, kpd_input_dev->evbit);
 	__set_bit(SW_LID, kpd_input_dev->swbit);
 #endif
+#if HALL_SENSOR_ENABLE
+	__set_bit(EV_SW, kpd_input_dev->evbit);
+	__set_bit(SW_LID, kpd_input_dev->swbit);
+#endif
 	if (kpd_dts_data.kpd_sw_rstkey)
 		__set_bit(kpd_dts_data.kpd_sw_rstkey, kpd_input_dev->keybit);
 #ifdef KPD_KEY_MAP
@@ -916,7 +1090,9 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 	if (err)
 		kpd_print("kpd cannot get regmap, please check dts config first.\n");
 #endif
-
+#if HALL_SENSOR_ENABLE
+	hall_irq_registration();
+#endif
 #ifndef KPD_EARLY_PORTING	/*add for avoid early porting build err the macro is defined in custom file */
 	long_press_reboot_function_setting();	/* /API 4 for kpd long press reboot function setting */
 #endif
@@ -1027,7 +1203,7 @@ static struct sb_handler kpd_sb_handler_desc = {
 static int __init kpd_mod_init(void)
 {
 	int r;
-
+	spin_lock_init(&hirq_flag_lock);
 	r = platform_driver_register(&kpd_pdrv);
 	if (r) {
 		kpd_info("register driver failed (%d)\n", r);

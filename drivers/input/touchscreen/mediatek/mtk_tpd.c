@@ -61,7 +61,11 @@ EXPORT_SYMBOL(tpd_dts_data);
 
 struct pinctrl *pinctrl1;
 struct pinctrl_state *pins_default;
+#if 1
+struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *rst_output1, *eint_input1;
+#else
 struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *rst_output1;
+#endif
 /* Vanzo:yuntaohe on: Mon, 11 Jan 2016 14:08:13 +0800
  */
 #ifndef CONFIG_TPD_POWER_SOURCE_VIA_VGP
@@ -183,8 +187,10 @@ void tpd_gpio_as_int(int pin)
 {
 	mutex_lock(&tpd_set_gpio_mutex);
 	TPD_DEBUG("[tpd]tpd_gpio_as_int\n");
-	if (pin == 1)
+	if (pin == 1) {
 		pinctrl_select_state(pinctrl1, eint_as_int);
+		pinctrl_select_state(pinctrl1, eint_input1);
+	}
 	mutex_unlock(&tpd_set_gpio_mutex);
 }
 EXPORT_SYMBOL(tpd_gpio_as_int);
@@ -252,6 +258,13 @@ int tpd_get_gpio_info(struct platform_device *pdev)
 	if (IS_ERR(rst_output1)) {
 		ret = PTR_ERR(rst_output1);
 		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_rst_output1!\n");
+		return ret;
+	}
+
+	eint_input1 = pinctrl_lookup_state(pinctrl1, "state_eint_input1");
+	if (IS_ERR(eint_input1)) {
+		ret = PTR_ERR(eint_input1);
+		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_eint_input1!\n");
 		return ret;
 	}
 

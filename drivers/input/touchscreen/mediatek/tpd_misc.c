@@ -19,6 +19,11 @@ module_param(tpd_calibrate_en, int, 0664);
 int tpd_show_version = 0;
 module_param(tpd_show_version, int, 0664);
 
+#if defined(TPD_REPORT_VENDOR_FW)
+char *tpd_show_vendor_firmware = NULL;
+module_param(tpd_show_vendor_firmware, charp, 0664);
+#endif
+
 /* switch touch panel into single scan mode for decreasing interference */
 void tpd_switch_single_mode(void)
 {

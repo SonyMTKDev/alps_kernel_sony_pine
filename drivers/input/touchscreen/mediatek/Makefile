@@ -52,6 +52,9 @@ obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_3320_50) +=  synaptics_3320_50/
 obj-$(CONFIG_TOUCHSCREEN_UNIFIED_DRIVER_4)	+=  unified_driver_4/
 obj-$(CONFIG_TOUCHSCREEN_MTK_MSG2238A)  +=  msg2238a/
 obj-$(CONFIG_TOUCHSCREEN_MTK_FT6336S)   +=  ft6336s/
+obj-$(CONFIG_TOUCHSCREEN_FT3427) +=  ft3427/
+obj-$(CONFIG_TOUCHSCREEN_MTK_FT3X27)	+=  ft3x27/
+obj-$(CONFIG_TOUCHSCREEN_MTK_NT11206)	+=  NT11206/
 # Vanzo:wangfei on: Sat, 28 Feb 2015 16:22:43 +0800
 # for use new style to config touchscreen
 endif

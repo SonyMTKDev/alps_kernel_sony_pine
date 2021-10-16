@@ -43,6 +43,8 @@
 #define TPD_DEBUG(arg...)
 #endif
 
+#define TPD_REPORT_VENDOR_FW 
+
 /* register, address, configurations */
 #define TPD_DEVICE            "mtk-tpd"
 #define TPD_X                  0
