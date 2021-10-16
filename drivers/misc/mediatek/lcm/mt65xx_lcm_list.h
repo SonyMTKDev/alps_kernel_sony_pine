@@ -16,6 +16,9 @@
 
 #include <lcm_drv.h>
 
+extern LCM_DRIVER r6135_hd720_dsi_vdo_lcm_drv;
+extern LCM_DRIVER r6135otp_hd720_dsi_vdo_lcm_drv;
+extern LCM_DRIVER nt35521s_hd720_dsi_vdo_lcm_drv;
 extern LCM_DRIVER st7701s_ctc50_dzx_lfwvga_lcm_drv;
 extern LCM_DRIVER st7703_ivo55_huayu_shd_lcm_drv;
 extern LCM_DRIVER st7701s_hsd50_fsd_lfwvga_lcm_drv;

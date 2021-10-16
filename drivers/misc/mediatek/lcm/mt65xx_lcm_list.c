@@ -35,6 +35,15 @@ LCM_DSI_MODE_CON lcm_dsi_mode;
 
 LCM_DRIVER *lcm_driver_list[] = {
 
+#if defined(R6135_HD720_DSI_VDO)
+	&r6135_hd720_dsi_vdo_lcm_drv,
+#endif
+#if defined(R6135OTP_HD720_DSI_VDO)
+	&r6135otp_hd720_dsi_vdo_lcm_drv,
+#endif
+#if defined(NT35521S_HD720_DSI_VDO)
+	&nt35521s_hd720_dsi_vdo_lcm_drv,
+#endif
 #if defined(ST7701S_CTC50_DZX_LFWVGA)
 	&st7701s_ctc50_dzx_lfwvga_lcm_drv,
 #endif
