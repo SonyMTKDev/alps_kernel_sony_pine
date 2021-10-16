@@ -31,7 +31,7 @@ obj-$(CONFIG_MTK_IRQ) += irq/
 obj-$(CONFIG_MTK_SYS_CIRQ) += cirq/
 obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
-obj-$(CONFIG_MTK_NFC) += nfc/
+obj-y += nfc/
 obj-$(CONFIG_NFC_CHIP_SUPPORT) += nfc/
 
 obj-$(CONFIG_MMPROFILE) += mmp/
@@ -131,7 +131,8 @@ obj-$(CONFIG_MTK_RAM_CONSOLE)	+= ram_console/
 obj-$(CONFIG_MTK_DRAM_LOG_STORE)	+= log_store/
 obj-$(CONFIG_MTK_USE_RESERVED_EXT_MEM) += exm/
 obj-$(CONFIG_RT_REGMAP) += rt-regmap/
-
+# obj-$(CONFIG_TCPC_CLASS) += pd/
+obj-$(CONFIG_TCPC_CLASS) += pd_rt1711/
 obj-$(CONFIG_MTK_SVP) += memory-ssvp/
 obj-$(CONFIG_ZONE_MOVABLE_CMA) += zone_movable_cma/
 
