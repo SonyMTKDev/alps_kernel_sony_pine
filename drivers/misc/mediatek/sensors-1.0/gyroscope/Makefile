@@ -29,8 +29,10 @@ else
 obj-$(CONFIG_MTK_GYROHUB)      +=  gyrohub/
 obj-$(CONFIG_MTK_BMI160_SPI)   +=  bmi160gy-spi/
 obj-$(CONFIG_MTK_ITG1010)   +=  ITG1010/
+obj-$(CONFIG_MTK_ITG1010_NEW)   +=  ITG1010-new/
 obj-$(CONFIG_MTK_MPU6515G)	+= mpu6515/
 obj-$(CONFIG_MTK_MPU6050GY)   +=  mpu6050gy/
+obj-$(CONFIG_MTK_LSM6DS3)   +=  lsm6ds3gy/
 # Vanzo:yucheng on: Tue, 06 Jan 2015 10:34:15 +0800
 # added for new structure config alsps
 endif
