@@ -21,6 +21,31 @@
 #include <mt-plat/mt_reboot.h>
 #include <mt-plat/mtk_rtc.h>
 
+#include <linux/slab.h>
+#include <linux/vmalloc.h>
+#include<mach/mt_rtc_hw.h>
+#include<mach/mtk_rtc_hal.h>
+
+extern u16 rtc_read(u16 addr);
+extern void rtc_write(u16 addr, u16 data);
+extern void rtc_write_trigger(void);
+
+#ifdef CONFIG_SONY_S1_SUPPORT
+#define S1_WARMBOOT_MAGIC_VAL (0xBEEF)
+#define S1_WARMBOOT_NORMAL    (0x7651)
+#define S1_WARMBOOT_S1        (0x6F53)
+#define S1_WARMBOOT_FB        (0x7700)
+#define S1_WARMBOOT_NONE      (0x0000)
+#define S1_WARMBOOT_CLEAR     (0xABAD)
+#define S1_WARMBOOT_TOOL      (0x7001)
+#define S1_WARMBOOT_RECOVERY  (0x7711)
+#define S1_WARMBOOT_FOTA      (0x6F46)
+
+extern void write_magic(volatile unsigned long magic_write, int log_option);
+#endif
+
+#define S1_WARMBOOT_FOTA_CACHE (0x6F50)
+
 static int wd_cpu_hot_plug_on_notify(int cpu);
 static int wd_cpu_hot_plug_off_notify(int cpu);
 static int spmwdt_mode_config(WD_REQ_CTL en, WD_REQ_MODE mode);
@@ -577,6 +602,48 @@ int get_wd_api(struct wd_api **obj)
 }
 
 #ifndef CONFIG_MEDIATEK_WATCHDOG
+static uint32_t *warmboot_addr_p;
+
+static void *remap_lowmem(phys_addr_t start, phys_addr_t size)
+{	
+        struct page **pages;	
+        phys_addr_t page_start;	
+        unsigned int page_count;	
+        pgprot_t prot;	
+        unsigned int i;
+        void *vaddr;	
+
+        page_start = start - offset_in_page(start);	
+        page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);	
+        prot = pgprot_noncached(PAGE_KERNEL);	
+        pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);	
+        if (!pages) 
+        {       
+            pr_err("%s: Failed to allocate array for %u pages\n", __func__, page_count);        
+            return NULL;    
+        }  
+        for (i = 0; i < page_count; i++)
+        {      
+            phys_addr_t addr = page_start + i * PAGE_SIZE;      
+            pages[i] = pfn_to_page(addr >> PAGE_SHIFT);
+        }   
+        vaddr = vmap(pages, page_count, VM_MAP, prot);
+        kfree(pages);
+        if (!vaddr) 
+        {       
+            pr_err("%s: Failed to map %u pages\n", __func__, page_count);       
+            return NULL;    
+        }   
+        return vaddr + offset_in_page(start);
+ }
+
+ static int __init warmboot_addr_console_early_init(void)
+ {    
+     warmboot_addr_p = remap_lowmem(0x10000834, sizeof(*warmboot_addr_p));
+     return 0;
+
+ }
+ console_initcall(warmboot_addr_console_early_init);
 /*register restart notify and own by debug start-------
 *
 */
@@ -602,12 +669,71 @@ void arch_reset(char mode, const char *cmd)
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 		rtc_mark_kpoc();
 #endif
+#ifdef CONFIG_SONY_S1_SUPPORT
+	}else if( (cmd && !strcmp(cmd, "oemS")) || (cmd && !strcmp(cmd, "oem-53")) ) {
+		reboot = 1;
+		write_magic(S1_WARMBOOT_MAGIC_VAL | (S1_WARMBOOT_S1 << 16), 0);
+#endif
+	}else if( cmd && !strcmp(cmd, "oem-50"))
+	{
+       pr_alert("[wd_api]arch_reset oem-50 Warmboot\n");
+	   reboot = 1;
+	   write_magic(S1_WARMBOOT_MAGIC_VAL | (S1_WARMBOOT_FOTA_CACHE << 16), 0);
 #if defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8173)
 	} else if (cmd && !strcmp(cmd, "rpmbpk")) {
 		mtk_wd_SetNonResetReg2(0x0, 1);
 #endif
-	} else {
+}
+	else if (cmd && !strcmp(cmd, "oemF"))
+	{
+
+ 	       u16 temp_warmboot_addr_p;
+               temp_warmboot_addr_p=rtc_read(RTC_AL_DOM);
+
+               pr_alert("[RTC Register] rtc_read(RTC_AL_DOM)(original) = %xh\n", temp_warmboot_addr_p);              
+               temp_warmboot_addr_p = 0x1111;	   
+               rtc_write(RTC_AL_DOM, temp_warmboot_addr_p);	     
+               rtc_write_trigger();	    
+               pr_alert("[RTC Register] rtc_write(RTC_AL_DOM, %xh)\n", temp_warmboot_addr_p);	     
+               pr_alert("[RTC Register] rtc_read(RTC_AL_DOM) = %xh\n", rtc_read(RTC_AL_DOM));
+
+               pr_alert(" [BACAL] arch_reset: Warmboot reasen= %s\n", cmd);	    
+               if(warmboot_addr_p){            
+                    *warmboot_addr_p=0x6f46beef;
+               }    
+	}
+	/*
+		In "RID002113 Verified Boot update", we need
+		1, Trigger restart by adb reboot "dm-verity device corrupted"
+		2. phone restart with cmdline: "androidboot.veritymode=eio".
+		So we need new warm-boot reason : :"0x7708"( S1_WARMBOOT_VERIFIED_BOOT_UPDATE) in lk to add the cmdline "androidboot.veritymode=eio"
+	*/
+	else if (cmd && !strcmp(cmd, "dm-verity device corrupted"))
+	{
+	       u16 temp_warmboot_addr_p;
+               temp_warmboot_addr_p=rtc_read(RTC_AL_DOM);
+
+               pr_alert("[RTC Register] rtc_read(RTC_AL_DOM)(original) = %xh\n", temp_warmboot_addr_p);              
+               temp_warmboot_addr_p = 0x2200;	   
+               rtc_write(RTC_AL_DOM, temp_warmboot_addr_p);	     
+               rtc_write_trigger();	    
+               pr_alert("[RTC Register] rtc_write(RTC_AL_DOM, %xh)\n", temp_warmboot_addr_p);	     
+               pr_alert("[RTC Register] rtc_read(RTC_AL_DOM) = %xh\n", rtc_read(RTC_AL_DOM));
+
+               pr_alert(" [dbg] arch_reset: Warmboot reasen= %s\n", cmd);	    
+               if(warmboot_addr_p){            
+                    *warmboot_addr_p=0x7708beef;
+               }    
+	}
+	else {
+	       pr_alert(" [BACAL] arch_reset: Warmboot reasen= %s\n", cmd);	    
+              if(warmboot_addr_p){	       
+                    *warmboot_addr_p=0x7651beef;        
+              }
 		reboot = 1;
+#ifdef CONFIG_SONY_S1_SUPPORT
+		write_magic(S1_WARMBOOT_MAGIC_VAL | (S1_WARMBOOT_NORMAL << 16), 0);
+#endif
 	}
 
 	if (res)

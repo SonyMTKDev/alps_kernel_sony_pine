@@ -604,6 +604,17 @@ static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
 }
 #endif /* CONFIG_FIQ_GLUE */
 
+#ifdef CONFIG_SONY_S1_SUPPORT
+#include <linux/io.h>
+#include <mt-plat/mt_io.h>
+
+volatile unsigned long magic_val = 0;
+void __iomem *magic_base=0;
+
+EXPORT_SYMBOL(magic_val);
+EXPORT_SYMBOL(magic_base);
+#endif
+
 /*
  * Device interface
  */
@@ -612,6 +623,25 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	int ret = 0;
 	unsigned int interval_val;
 	unsigned int nonrst;
+
+#ifdef CONFIG_SONY_S1_SUPPORT
+	struct device_node *iram_node;
+
+	iram_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-scpsys");
+
+	if(!magic_base)
+	{
+		magic_base = of_iomap(iram_node, 0);
+		if (!magic_base) {
+			printk("iomap failed\n");
+		}
+		printk("base: 0x%lx\n", (unsigned long)magic_base);
+	}
+
+	magic_val = readl(IOMEM(magic_base + 0x834));
+
+	printk("magic addr= 0x%lx, magic val = 0x%lx\n", (unsigned long)magic_base+0x834, magic_val);
+#endif
 
 	pr_err("******** MTK WDT driver probe!! ********\n");
 #ifdef CONFIG_OF
