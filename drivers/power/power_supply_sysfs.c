@@ -223,10 +223,32 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(present_smb),
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_ATTR(adjust_power),
+#if defined(CONFIG_STOP_CHARGING_IN_DEMOAPP)
+	POWER_SUPPLY_ATTR(enable_llk),
+#endif
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+	POWER_SUPPLY_ATTR(sc3_40_init_time),
+	POWER_SUPPLY_ATTR(sc3_40_charging_time),
+	POWER_SUPPLY_ATTR(sc3_30_init_time),
+	POWER_SUPPLY_ATTR(sc3_30_charging_time),
+	POWER_SUPPLY_ATTR(sc3_20_init_time),
+	POWER_SUPPLY_ATTR(sc3_20_charging_time),
+	POWER_SUPPLY_ATTR(sc3_fcc_mah_0),
+	POWER_SUPPLY_ATTR(sc3_fcc_mah_1),
+	POWER_SUPPLY_ATTR(sc3_fcc_mah_2),
+	POWER_SUPPLY_ATTR(sc3_fcc_mah_3),
+	POWER_SUPPLY_ATTR(sc3_fcc_mah_4),
+#endif
+#ifdef CONFIG_CHARGER_QNS
+	POWER_SUPPLY_ATTR(max_charge_current),
+#endif
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_ATTR(model_name),
 	POWER_SUPPLY_ATTR(manufacturer),
 	POWER_SUPPLY_ATTR(serial_number),
+#ifdef CONFIG_CHARGER_QNS
+	POWER_SUPPLY_ATTR(battery_type),
+#endif
 };
 
 static struct attribute *
@@ -349,6 +371,13 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
 
 		dev_dbg(dev, "prop %s=%s\n", attrname, prop_buf);
 
+#if 1
+		if ((env->envp_idx+1) >= UEVENT_NUM_ENVP) {
+			kfree(attrname);
+			ret = 0;
+			goto out;	
+		}
+#endif
 		ret = add_uevent_var(env, "POWER_SUPPLY_%s=%s", attrname, prop_buf);
 		kfree(attrname);
 		if (ret)

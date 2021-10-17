@@ -18,6 +18,10 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc/
 
+ifeq ($(strip $(TARGET_BUILD_VARIANT)),user)
+        subdir-ccflags-y += -DUSER_BUILD
+endif
+
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT) += mtk_pep_intf.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT) += mtk_pep20_intf.o
 
@@ -78,7 +82,11 @@ else
 															ifeq ($(CONFIG_RT5081A_PMU_CHARGER), y)
 																obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
 															else
-																obj-$(CONFIG_MTK_SMART_BATTERY) += linear_charging.o
+																ifeq ($(CONFIG_MTK_RT9458_SUPPORT),y)
+																	obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
+																else
+																	obj-$(CONFIG_MTK_SMART_BATTERY) += linear_charging.o
+																endif
 															endif
 														endif
 													endif

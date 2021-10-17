@@ -353,7 +353,11 @@ static signed int gFG_aft_soc = 0;
 #endif
 
 #ifndef SUSPEND_CURRENT_CHECK_THRESHOLD
+#if 1
+#define SUSPEND_CURRENT_CHECK_THRESHOLD 160	/* 16mA */
+#else
 #define SUSPEND_CURRENT_CHECK_THRESHOLD 100	/* 10mA */
+#endif
 #endif
 
 
@@ -470,7 +474,11 @@ signed int gFG_min_temperature = 100;
 #endif				/* battery info */
 
 unsigned int g_sw_fg_version = 150327;
+#if defined(USER_BUILD)
 static signed int gFG_daemon_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
+#else
+static signed int gFG_daemon_log_level = 7;
+#endif
 static unsigned char gDisableFG;
 
 static unsigned long bat_node;
@@ -520,13 +528,57 @@ kal_bool gFG_Is_offset_init = KAL_FALSE;
 unsigned int g_fg_battery_id;
 
 #ifdef MTK_GET_BATTERY_ID_BY_AUXADC
+#ifdef CONFIG_CHARGER_QNS
+void get_profile_id_and_volt(int *batt_id, int *batt_id_volt)
+{
+        int id_volt = 0;
+	unsigned int fg_battery_id = 0;
+        int id = 0;
+        int ret = 0;
+	*batt_id = 0;
+        *batt_id_volt = 0;
+/*[Arima_8100][bozhi_lin] multi-id battery support implement 20161115 begin*/
+#if defined(MTK_GET_BATTERY_ID_BY_AUXADC_VIN)
+        ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_ID, &id_volt);
+#else
+        ret = IMM_GetOneChannelValue_Cali(BATTERY_ID_CHANNEL_NUM, &id_volt);
+#endif
+/*[Arima_8100][bozhi_lin] 20161115 end*/
+        if (ret != 0)
+                bm_info("[fgauge_get_profile_id_and_volt]id_volt read fail\n");
+        else
+                bm_info("[fgauge_get_profile_id_and_volt]id_volt = %d\n", id_volt);
+
+        if ((sizeof(g_battery_id_voltage) / sizeof(signed int)) != TOTAL_BATTERY_NUMBER) {
+                bm_info("[fgauge_get_profile_id_and_volt]error! voltage range incorrect!\n");
+                return;
+        }
+	*batt_id_volt = id_volt;
+
+        for (id = 0; id < TOTAL_BATTERY_NUMBER; id++) {
+                if (id_volt < g_battery_id_voltage[id]) {
+                        fg_battery_id = id;
+                        break;
+                } else if (g_battery_id_voltage[id] == -1) {
+                        fg_battery_id = TOTAL_BATTERY_NUMBER - 1;
+                }
+        }
+
+        bm_info("[fgauge_get_profile_id_and_volt]Battery id (%d), volt(%d)\n", fg_battery_id, id_volt);
+        *batt_id = fg_battery_id;
+}
+#endif
 void fgauge_get_profile_id(void)
 {
 	int id_volt = 0;
 	int id = 0;
 	int ret = 0;
 
+#if defined(MTK_GET_BATTERY_ID_BY_AUXADC_VIN)
+	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_ID, &id_volt);
+#else
 	ret = IMM_GetOneChannelValue_Cali(BATTERY_ID_CHANNEL_NUM, &id_volt);
+#endif
 	if (ret != 0)
 		bm_info("[fgauge_get_profile_id]id_volt read fail\n");
 	else
@@ -1407,17 +1459,37 @@ int BattThermistorConverTemp(int Res)
 	int i = 0;
 	int RES1 = 0, RES2 = 0;
 	int TBatt_Value = -200, TMP1 = 0, TMP2 = 0;
+#if 1
+	int Batt_Temperature_Table_Size= sizeof(Batt_Temperature_Table) / sizeof(BATT_TEMPERATURE);
+#else
 	BATT_TEMPERATURE *batt_temperature_table = (BATT_TEMPERATURE *)&Batt_Temperature_Table[g_fg_battery_id];
+#endif
 
 	if (Res >= batt_temperature_table[0].TemperatureR) {
+#if 1
+		TBatt_Value = Batt_Temperature_Table[0].BatteryTemp;
+#else
 		TBatt_Value = -20;
+#endif
+#if 1
+	} else if (Res <  Batt_Temperature_Table[Batt_Temperature_Table_Size].TemperatureR) {
+#else
 	} else if (Res <= batt_temperature_table[16].TemperatureR) {
+#endif
+#if 1
+		TBatt_Value = Batt_Temperature_Table[Batt_Temperature_Table_Size-1].BatteryTemp;
+#else
 		TBatt_Value = 60;
+#endif
 	} else {
 		RES1 = batt_temperature_table[0].TemperatureR;
 		TMP1 = batt_temperature_table[0].BatteryTemp;
 
+#if 1
+		for (i = 0; i <  Batt_Temperature_Table_Size; i++) {
+#else
 		for (i = 0; i <= 16; i++) {
+#endif
 			if (Res >= batt_temperature_table[i].TemperatureR) {
 				RES2 = batt_temperature_table[i].TemperatureR;
 				TMP2 = batt_temperature_table[i].BatteryTemp;
@@ -2278,6 +2350,28 @@ signed int battery_meter_get_charging_current(void)
 #endif
 }
 
+#ifdef CONFIG_CHARGER_QNS
+signed int battery_meter_get_qmax(void)
+{
+	return gFG_BATT_CAPACITY_aging;
+}
+
+signed int battery_meter_get_design_qmax(void)
+{
+	return g_Q_MAX_POS_50[g_fg_battery_id];
+}
+
+signed int battery_meter_get_battery_id(void)
+{
+	int batt_id = 0;
+	int batt_id_volt = 0;
+
+	get_profile_id_and_volt(&batt_id, &batt_id_volt);
+
+	return batt_id;
+}
+#endif
+
 signed int battery_meter_get_battery_current(void)
 {
 	int ret = 0;
@@ -2303,6 +2397,25 @@ kal_bool battery_meter_get_battery_current_sign(void)
 
 	return val;
 }
+
+#ifdef CONFIG_CHARGER_QNS
+signed int battery_meter_get_battery_current_now(void)
+{
+	int ret = 0;
+	kal_bool val = 0;
+	kal_bool is_charging = 0;
+
+	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &val);
+	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN, &is_charging);
+
+	if (is_charging == KAL_TRUE)
+		val = val;
+	else
+		val = 0 - val;
+
+	return val;
+}
+#endif
 
 signed int battery_meter_get_car(void)
 {
@@ -4672,6 +4785,70 @@ static int battery_meter_probe(struct platform_device *dev)
 	return 0;
 }
 
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+void store_batt_info_data(void)
+{
+	struct file *flp = NULL;
+	mm_segment_t fs = get_fs();
+	u8 *refp = NULL;
+	u32 ref_len = 600;
+	s32 ret = 0;
+	printk("[B]%s(%d): ++++\n", __func__, __LINE__);
+
+	refp = kzalloc(ref_len, GFP_KERNEL);
+	set_fs(KERNEL_DS);
+
+//	flp = filp_open("/data/battery_info.log", O_RDWR | O_CREAT, 0660);
+	flp = filp_open("/persist/battery_info.log", O_RDWR | O_CREAT, 0660);
+	if (IS_ERR(flp)) {
+		printk("[B]%s(%d): file open fail, Creat ref file\n", __func__, __LINE__);
+		/* flp->f_op->llseek(flp, 0, SEEK_SET); */
+		/* flp->f_op->write(flp, (char *)refp, ref_len, &flp->f_pos); */
+	} else {
+		//printk("[B]%s(%d): \n", __func__, __LINE__);
+		ret = 0;
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_40_init_time=%d,\n", BMT_status.SOFTCHARE3_0_40_init_time);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_40_charging_time=%d,\n", BMT_status.SOFTCHARE3_0_40_charging_time);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_30_init_time=%d,\n", BMT_status.SOFTCHARE3_0_30_init_time);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_30_charging_time=%d,\n", BMT_status.SOFTCHARE3_0_30_charging_time);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_20_init_time=%d,\n", BMT_status.SOFTCHARE3_0_20_init_time);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_20_charging_time=%d,\n", BMT_status.SOFTCHARE3_0_20_charging_time);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_fcc_mah_0=%d,\n", BMT_status.SOFTCHARE3_0_fcc_mah[0]);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_aged_fcc_mah_0=%d,\n", BMT_status.SOFTCHARE3_0_aged_fcc_mah[0]);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_fcc_mah_1=%d,\n", BMT_status.SOFTCHARE3_0_fcc_mah[1]);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_aged_fcc_mah_1=%d,\n", BMT_status.SOFTCHARE3_0_aged_fcc_mah[1]);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_fcc_mah_2=%d,\n", BMT_status.SOFTCHARE3_0_fcc_mah[2]);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_aged_fcc_mah_2=%d,\n", BMT_status.SOFTCHARE3_0_aged_fcc_mah[2]);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_fcc_mah_3=%d,\n", BMT_status.SOFTCHARE3_0_fcc_mah[3]);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_aged_fcc_mah_3=%d,\n", BMT_status.SOFTCHARE3_0_aged_fcc_mah[3]);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_fcc_mah_4=%d,\n", BMT_status.SOFTCHARE3_0_fcc_mah[4]);
+		ret += sprintf(refp+ret, "SOFTCHARE3_0_aged_fcc_mah_4=%d,\n", BMT_status.SOFTCHARE3_0_aged_fcc_mah[4]);
+		printk("[B]%s(%d): refp=%s\n", __func__, __LINE__, refp);
+
+		flp->f_op->llseek(flp, 0, SEEK_SET);
+		ret = flp->f_op->write(flp, (char *)refp, ref_len, &flp->f_pos);
+		if (ret < 0) {
+			printk("[B]%s(%d): Write file failed.", __func__, __LINE__);
+			memset(refp, 0, ref_len);
+		}
+
+#if 0
+		flp->f_op->llseek(flp, 0, SEEK_SET);
+		ret = flp->f_op->read(flp, (char *)refp, ref_len, &flp->f_pos);
+		if (ret < 0) {
+			printk("[B]%s(%d): Read file failed.", __func__, __LINE__);
+			memset(refp, 0, ref_len);
+		}
+		printk("[B]%s(%d): refp=%s\n", __func__, __LINE__, refp);
+#endif
+	}
+	set_fs(fs);
+
+	kfree(refp);
+	//printk("[B]%s(%d): ----\n", __func__, __LINE__);
+}
+#endif
+
 static int battery_meter_remove(struct platform_device *dev)
 {
 	bm_debug("[battery_meter_remove]\n");
@@ -5501,6 +5678,22 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			memcpy(&rtcvalue, &msg->fgd_data[0], sizeof(rtcvalue));
 			set_rtc_spare_fg_value(rtcvalue);
 			bm_notice("[fg_res] set rtc = %d\n", rtcvalue);
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+			{
+				static kal_bool is_last_charger_exist = KAL_FALSE;
+
+				//printk("[B]%s(%d): bat_is_charger_exist()=%d, is_last_charger_exist=%d\n", __func__, __LINE__, bat_is_charger_exist(), is_last_charger_exist);
+				if (!bat_is_charger_exist() && is_last_charger_exist) {
+					printk("[B]%s(%d): bat_is_charger_exist()=%d, is_last_charger_exist=%d\n", __func__, __LINE__, bat_is_charger_exist(), is_last_charger_exist);
+					store_batt_info_data();
+				} else if (((BMT_status.CC_charging_time % 600) == 0) && (BMT_status.CC_charging_time > 0) && bat_is_charger_exist()){
+					printk("[B]%s(%d): BMT_status.CC_charging_time=%d, %d\n", __func__, __LINE__, BMT_status.CC_charging_time, BMT_status.CC_charging_time%60);
+					store_batt_info_data();
+				}
+				is_last_charger_exist = bat_is_charger_exist();
+				//printk("[B]%s(%d): bat_is_charger_exist()=%d, is_last_charger_exist=%d\n", __func__, __LINE__, bat_is_charger_exist(), is_last_charger_exist);
+			}
+#endif
 		}
 		break;
 
@@ -5508,7 +5701,22 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		{
 
 			bm_debug("[fg_res] FG_DAEMON_CMD_SET_POWEROFF\n");
+#if 1
+			if (BMT_status.FAKE_UI_SOC == -1) {
+				int voltage = 0;
+				voltage = battery_meter_get_battery_voltage(KAL_TRUE);
+				if (voltage >= 3300) {
+					bm_notice("[fg_res] voltage=%d, above 3.3V, can't power-off\n", voltage);
+				} else {
+					bm_notice("[fg_res] voltage=%d, power-off\n", voltage);
+					kernel_power_off();
+				}
+			} else {
+				bm_notice("[fg_res] set BMT_status.FAKE_UI_SOC = %d, not do FG_DAEMON_CMD_SET_POWEROFF\n", BMT_status.FAKE_UI_SOC);
+			}
+#else
 			kernel_power_off();
+#endif
 		}
 		break;
 
@@ -5553,6 +5761,14 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			signed int UI_SOC;
 
 			memcpy(&UI_SOC, &msg->fgd_data[0], sizeof(UI_SOC));
+			{
+				int voltage = 0;
+				voltage = battery_meter_get_battery_voltage(KAL_TRUE);
+				if ((BMT_status.UI_SOC2 == 1) && (UI_SOC == 0) && (voltage >= 3400)) {
+					UI_SOC = 1;
+					bm_notice("[fg_res] voltage=%d, above 3.4V, set UI_SOC to %d\n", voltage, UI_SOC);
+				}
+			}
 			bm_debug("[fg_res] UI_SOC2 = %d\n", UI_SOC);
 #ifdef USING_SMOOTH_UI_SOC2
 			temp_UI_SOC2 = UI_SOC;
@@ -5680,6 +5896,47 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			memcpy(&cali_car_tune, &msg->fgd_data[0], sizeof(cali_car_tune));
 			bm_notice("[fg_res] cali_car_tune = %d\n", cali_car_tune);
 			batt_meter_cust_data.car_tune_value = cali_car_tune;
+		}
+		break;
+
+		case FG_DAEMON_CMD_SET_AGING_FACTOR:
+		{
+			signed int aging_factor_tmp;
+
+			memcpy(&aging_factor_tmp, &msg->fgd_data[0], sizeof(aging_factor_tmp));
+			bm_notice("[fg_res] aging_factor_tmp = %d\n", aging_factor_tmp);
+			gFG_aging_factor_1 = aging_factor_tmp;
+
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+			{
+				int i = 0;
+				int batt_capacity_sum = 0;
+				int batt_capacity_count = 0;
+
+				for (i = 0; i < 5; i++) {
+					if ( i == 4 ) {
+						BMT_status.SOFTCHARE3_0_aged_fcc_mah[i] = BATTERY_DESIGN_CAPACITY * aging_factor_tmp / 100;
+					} else {
+						BMT_status.SOFTCHARE3_0_aged_fcc_mah[i] = BMT_status.SOFTCHARE3_0_aged_fcc_mah[i+1];
+					}
+				}
+
+				bm_debug("[B]%s(%d): %d, %d, %d, %d, %d\n", __func__, __LINE__,
+					BMT_status.SOFTCHARE3_0_aged_fcc_mah[0], BMT_status.SOFTCHARE3_0_aged_fcc_mah[1], BMT_status.SOFTCHARE3_0_aged_fcc_mah[2],
+					BMT_status.SOFTCHARE3_0_aged_fcc_mah[3], BMT_status.SOFTCHARE3_0_aged_fcc_mah[4]);
+
+				for (i = 0; i < 5; i++) {
+					if (BMT_status.SOFTCHARE3_0_aged_fcc_mah[i]) {
+						batt_capacity_sum += BMT_status.SOFTCHARE3_0_aged_fcc_mah[i];
+						batt_capacity_count++;
+					}
+				}
+				BMT_status.SOFTCHARE3_0_average_fcc_mah = batt_capacity_sum / batt_capacity_count;
+
+				bm_debug("[B]%s(%d): BMT_status.SOFTCHARE3_0_average_fcc_mah=%d\n", __func__, __LINE__,
+					BMT_status.SOFTCHARE3_0_average_fcc_mah);
+			}
+#endif
 		}
 		break;
 
