@@ -275,7 +275,7 @@ static struct cfg80211_bss *cfg80211_get_conn_bss(struct wireless_dev *wdev)
 
 static void __cfg80211_sme_scan_done(struct net_device *dev)
 {
-	struct wireless_dev *wdev = dev->ieee80211_ptr;
+	//const u8 *country_ie;
 	struct cfg80211_registered_device *rdev = wiphy_to_rdev(wdev->wiphy);
 	struct cfg80211_bss *bss;
 
@@ -658,7 +658,7 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
 	wdev->current_bss = bss_from_pub(bss);
 
 	cfg80211_upload_connect_keys(wdev);
-
+/*
 	rcu_read_lock();
 	country_ie = ieee80211_bss_get_ie(bss, WLAN_EID_COUNTRY);
 	if (!country_ie) {
@@ -671,15 +671,16 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
 
 	if (!country_ie)
 		return;
-
+*/
 	/*
 	 * ieee80211_bss_get_ie() ensures we can access:
 	 * - country_ie + 2, the start of the country ie data, and
 	 * - and country_ie[1] which is the IE length
 	 */
-	regulatory_hint_country_ie(wdev->wiphy, bss->channel->band,
+/*	regulatory_hint_country_ie(wdev->wiphy, bss->channel->band,
 				   country_ie + 2, country_ie[1]);
 	kfree(country_ie);
+*/
 }
 
 void cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
