@@ -1,7 +1,7 @@
 /dts-v1/;
 
 #include "mt6735.dts"
-#include "cust.dtsi"
+#include <pine/cust.dtsi>
 #include "mt6735_fg20_bat_setting.dtsi"
 #include <dt-bindings/lcm/r63417_fhd_dsi_cmd_truly_nt50358.dtsi>
 
