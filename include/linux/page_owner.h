@@ -34,22 +34,6 @@ static inline gfp_t get_page_owner_gfp(struct page *page)
 
 	return __get_page_owner_gfp(page);
 }
-#ifdef CONFIG_PAGE_OWNER_SLIM
-
-#define BT_HASH_TABLE_SIZE      1801
-struct BtEntry {
-	struct list_head list;
-	size_t nr_entries;
-	size_t allocations;
-	unsigned long backtrace[8];
-};
-
-struct BtTable {
-	size_t count;
-	struct list_head list[BT_HASH_TABLE_SIZE];
-};
-#endif
-
 #else
 static inline void reset_page_owner(struct page *page, unsigned int order)
 {

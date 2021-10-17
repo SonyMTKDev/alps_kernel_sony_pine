@@ -172,10 +172,32 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_present_smb,
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_PROP_adjust_power,
+#if defined(CONFIG_STOP_CHARGING_IN_DEMOAPP)
+	POWER_SUPPLY_PROP_enable_llk,
+#endif
+#if defined(CONFIG_CHARGING_SOFTCHARE3_0)
+	POWER_SUPPLY_PROP_sc3_40_init_time,
+	POWER_SUPPLY_PROP_sc3_40_charging_time,
+	POWER_SUPPLY_PROP_sc3_30_init_time,
+	POWER_SUPPLY_PROP_sc3_30_charging_time,
+	POWER_SUPPLY_PROP_sc3_20_init_time,
+	POWER_SUPPLY_PROP_sc3_20_charging_time,
+	POWER_SUPPLY_PROP_sc3_fcc_mah_0,
+	POWER_SUPPLY_PROP_sc3_fcc_mah_1,
+	POWER_SUPPLY_PROP_sc3_fcc_mah_2,
+	POWER_SUPPLY_PROP_sc3_fcc_mah_3,
+	POWER_SUPPLY_PROP_sc3_fcc_mah_4,
+#endif
+#ifdef CONFIG_CHARGER_QNS
+	POWER_SUPPLY_PROP_MAX_CHARGE_CURRENT,
+#endif
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_PROP_MODEL_NAME,
 	POWER_SUPPLY_PROP_MANUFACTURER,
 	POWER_SUPPLY_PROP_SERIAL_NUMBER,
+#ifdef CONFIG_CHARGER_QNS
+	POWER_SUPPLY_PROP_BATTERY_TYPE,
+#endif
 };
 
 enum power_supply_type {
