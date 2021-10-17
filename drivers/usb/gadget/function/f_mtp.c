@@ -382,6 +382,11 @@ static inline struct mtp_dev *func_to_mtp(struct usb_function *f)
 static struct usb_request *mtp_request_new(struct usb_ep *ep, int buffer_size)
 {
 	struct usb_request *req = usb_ep_alloc_request(ep, GFP_KERNEL);
+#if defined(USER_BUILD)
+
+#else
+	dump_stack();
+#endif
 	if (!req)
 		return NULL;
 
@@ -401,6 +406,11 @@ static struct usb_request *mtp_request_new(struct usb_ep *ep, int buffer_size)
 
 static void mtp_request_free(struct usb_request *req, struct usb_ep *ep)
 {
+#if defined(USER_BUILD)
+
+#else
+	dump_stack();
+#endif
 	if (req) {
 		kfree(req->buf);
 		usb_ep_free_request(ep, req);
