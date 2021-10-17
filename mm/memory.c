@@ -2631,6 +2631,10 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
 	if (vma->vm_flags & VM_SHARED)
 		return VM_FAULT_SIGBUS;
 
+	/* File mapping without ->vm_ops ? */
+	if (vma->vm_flags & VM_SHARED)
+		return VM_FAULT_SIGBUS;
+
 	/* Use the zero-page for reads */
 	if (!(flags & FAULT_FLAG_WRITE)) {
 		entry = pte_mkspecial(pfn_pte(my_zero_pfn(address),
@@ -3035,6 +3039,9 @@ static int do_linear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 			- vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
 
 	pte_unmap(page_table);
+	/* The VMA was not fully populated on mmap() or missing VM_DONTEXPAND */
+	if (!vma->vm_ops->fault)
+		return VM_FAULT_SIGBUS;
 	/* The VMA was not fully populated on mmap() or missing VM_DONTEXPAND */
 	if (!vma->vm_ops->fault)
 		return VM_FAULT_SIGBUS;
