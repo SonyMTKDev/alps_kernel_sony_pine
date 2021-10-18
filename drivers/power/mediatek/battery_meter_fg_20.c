@@ -1459,37 +1459,17 @@ int BattThermistorConverTemp(int Res)
 	int i = 0;
 	int RES1 = 0, RES2 = 0;
 	int TBatt_Value = -200, TMP1 = 0, TMP2 = 0;
-#if 1
-	int Batt_Temperature_Table_Size= sizeof(Batt_Temperature_Table) / sizeof(BATT_TEMPERATURE);
-#else
 	BATT_TEMPERATURE *batt_temperature_table = (BATT_TEMPERATURE *)&Batt_Temperature_Table[g_fg_battery_id];
-#endif
 
 	if (Res >= batt_temperature_table[0].TemperatureR) {
-#if 1
-		TBatt_Value = Batt_Temperature_Table[0].BatteryTemp;
-#else
 		TBatt_Value = -20;
-#endif
-#if 1
-	} else if (Res <  Batt_Temperature_Table[Batt_Temperature_Table_Size].TemperatureR) {
-#else
 	} else if (Res <= batt_temperature_table[16].TemperatureR) {
-#endif
-#if 1
-		TBatt_Value = Batt_Temperature_Table[Batt_Temperature_Table_Size-1].BatteryTemp;
-#else
 		TBatt_Value = 60;
-#endif
 	} else {
 		RES1 = batt_temperature_table[0].TemperatureR;
 		TMP1 = batt_temperature_table[0].BatteryTemp;
 
-#if 1
-		for (i = 0; i <  Batt_Temperature_Table_Size; i++) {
-#else
 		for (i = 0; i <= 16; i++) {
-#endif
 			if (Res >= batt_temperature_table[i].TemperatureR) {
 				RES2 = batt_temperature_table[i].TemperatureR;
 				TMP2 = batt_temperature_table[i].BatteryTemp;
@@ -1637,23 +1617,45 @@ int BattThermistorConverTemp(int Res)
 	int i = 0;
 	int RES1 = 0, RES2 = 0;
 	int TBatt_Value = -200, TMP1 = 0, TMP2 = 0;
+#if 1
+	int Batt_Temperature_Table_Size= sizeof(Batt_Temperature_Table) / sizeof(BATT_TEMPERATURE);
+#else
+	BATT_TEMPERATURE *batt_temperature_table = (BATT_TEMPERATURE *)&Batt_Temperature_Table[g_fg_battery_id];
+#endif
 
-	if (Res >= Batt_Temperature_Table[0].TemperatureR) {
+	if (Res >= batt_temperature_table[0].TemperatureR) {
+#if 1
+		TBatt_Value = Batt_Temperature_Table[0].BatteryTemp;
+#else
 		TBatt_Value = -20;
-	} else if (Res <= Batt_Temperature_Table[16].TemperatureR) {
+#endif
+#if 1
+	} else if (Res <  Batt_Temperature_Table[Batt_Temperature_Table_Size].TemperatureR) {
+#else
+	} else if (Res <= batt_temperature_table[16].TemperatureR) {
+#endif
+#if 1
+		TBatt_Value = Batt_Temperature_Table[Batt_Temperature_Table_Size-1].BatteryTemp;
+#else
 		TBatt_Value = 60;
+#endif
 	} else {
-		RES1 = Batt_Temperature_Table[0].TemperatureR;
-		TMP1 = Batt_Temperature_Table[0].BatteryTemp;
+		RES1 = batt_temperature_table[0].TemperatureR;
+		TMP1 = batt_temperature_table[0].BatteryTemp;
 
+#if 1
+		for (i = 0; i <  Batt_Temperature_Table_Size; i++) {
+#else
 		for (i = 0; i <= 16; i++) {
-			if (Res >= Batt_Temperature_Table[i].TemperatureR) {
-				RES2 = Batt_Temperature_Table[i].TemperatureR;
-				TMP2 = Batt_Temperature_Table[i].BatteryTemp;
+#endif
+			if (Res >= batt_temperature_table[i].TemperatureR) {
+				RES2 = batt_temperature_table[i].TemperatureR;
+				TMP2 = batt_temperature_table[i].BatteryTemp;
 				break;
 			}
-			RES1 = Batt_Temperature_Table[i].TemperatureR;
-			TMP1 = Batt_Temperature_Table[i].BatteryTemp;
+
+			RES1 = batt_temperature_table[i].TemperatureR;
+			TMP1 = batt_temperature_table[i].BatteryTemp;
 
 		}
 

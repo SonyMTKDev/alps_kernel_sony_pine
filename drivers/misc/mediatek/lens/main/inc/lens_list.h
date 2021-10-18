@@ -57,7 +57,7 @@ extern int BU63169AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #define DW9714TAF_SetI2Cclient DW9714TAF_SetI2Cclient_Main
 #define DW9714TAF_Ioctl DW9714TAF_Ioctl_Main
 #define DW9714TAF_Release DW9714TAF_Release_Main
-extern void DW9714TAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock,
+extern int DW9714TAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock,
 				  int *pAF_Opened);
 extern long DW9714TAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 			   unsigned long a_u4Param);

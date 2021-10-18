@@ -500,11 +500,6 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 			copy_size = 0;
 		else
 			copy_size = count;
-	} else {
-		if (unlikely(get_LowLatencyDebug() & DEBUG_DL2_AEE_OTHERS)) {
-			pr_warn("%s, Insufficient data !\n", __func__);
-			AUDIO_AEE("ISRCopy has remaining data !!");
-		}
 	}
 
 #ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */

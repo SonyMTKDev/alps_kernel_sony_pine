@@ -69,31 +69,6 @@ static int s4AF_ReadReg(unsigned short *a_pu2Result)
 	return 0;
 }
 
-static void DW9714AF_init_drv(void)
-{
-
-	char puSendCmd0[2] = {0xec,0xa3};
-	char puSendCmd1[2] = {0xa1,0x0E};
-	char puSendCmd2[2] = {0xf2,0x90};
-	char puSendCmd3[2] = {0xdc,0x51};
-
-	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
-	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;	
-
-    i2c_master_send(g_pstAF_I2Cclient, puSendCmd0, 2);
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd1, 2);
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
-
-	s4AF_WriteReg(0);
-
-//	s4AF_WriteReg(0xECA3);//Ringing Setting ON
-//	s4AF_WriteReg(0xA10E);//DLC MCKL setting
-//	s4AF_WriteReg(0xF290);//T_SRC setting
-//	s4AF_WriteReg(0xDC51);
-//	s4AF_WriteReg(0);
-}
-
 static int s4AF_WriteReg(u16 a_u2Data)
 {
 	int i4RetValue = 0;
@@ -113,7 +88,32 @@ static int s4AF_WriteReg(u16 a_u2Data)
 
 	return 0;
 }
-
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu S
+static void DW9714AF_init_drv(void)
+{
+	
+	char puSendCmd0[2] = {0xec,0xa3};
+	char puSendCmd1[2] = {0xa1,0x0E};
+	char puSendCmd2[2] = {0xf2,0x90};
+	char puSendCmd3[2] = {0xdc,0x51};
+	
+	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;	
+	
+    i2c_master_send(g_pstAF_I2Cclient, puSendCmd0, 2);
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd1, 2);
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
+	
+	s4AF_WriteReg(0);
+	
+//	s4AF_WriteReg(0xECA3);//Ringing Setting ON
+//	s4AF_WriteReg(0xA10E);//DLC MCKL setting
+//	s4AF_WriteReg(0xF290);//T_SRC setting
+//	s4AF_WriteReg(0xDC51);
+//	s4AF_WriteReg(0);
+}
+//[SM31][Camera] Fix AF HW Noise 20170110 Person Liu E
 static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
 	struct stAF_MotorInfo stMotorInfo;
@@ -186,10 +186,9 @@ static inline int moveAF(unsigned long a_u4Position)
 		spin_unlock(g_pAF_SpinLock);
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
-		ret = -1;
 	}
 
-	return ret;
+	return 0;
 }
 
 static inline int setAFInf(unsigned long a_u4Position)

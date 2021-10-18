@@ -67,7 +67,6 @@ static int gsensor_local_init(void);
 static int gsensor_remove(void);
 static int gsensor_set_delay(u64 ns);
 
-
 /*----------------------------------------------------------------------------*/
 static struct data_resolution bma4xy_acc_data_resolution[1] = {
 	{{0, 12}, 8192},	// +/-4G range
@@ -3668,6 +3667,12 @@ static int bma4xy_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 		goto exit_err_clean;
 	}
 	memset(client_data, 0, sizeof(struct bma4xy_client_data));
+	err = get_accel_dts_func(client->dev.of_node, hw);
+	if (err) {
+		GSE_ERR("get dts info fail\n");
+		err = -EFAULT;
+		goto exit_err_clean;
+	}
 	/* h/w init */
 	client_data->device.bus_read = bma4xy_i2c_read_wrapper;
 	client_data->device.burst_read = bma4xy_i2c_read_wrapper;
@@ -3746,13 +3751,15 @@ static int bma4xy_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 		GSE_ERR("register acc data path err\n");
 		goto exit_err_clean;
 	}
+  GSE_LOG("acc,batch_register_support_info success\n");
+#if 0
 	err = batch_register_support_info(ID_ACCELEROMETER,
 					ctl.is_support_batch, 102, 0);
 	if (err) {
 		GSE_ERR("register gsensor batch support err = %d\n", err);
 		goto exit_err_clean;
 	}
-
+#endif
 	gsensor_init_flag = 0;
 	
 	GSE_LOG("%s: OK\n", __func__);
@@ -3829,12 +3836,14 @@ static int gsensor_remove(void)
 static int __init BMA4xy_init(void)
 {
 	//const char *name = "mediatek,bma4xy";
-	const char *name = "mediatek,arima_gsensor";	//same compatible in dtsi
+	//const char *name = "mediatek,arima_gsensor";	same compatible in dtsi
 	
 	GSE_FUN();
-	hw = get_accel_dts_func(name, hw);
+#if 0
+	hw = get_accel_dts_func(client->dev.of_node, &obj->hw);
 	if (!hw)
 		GSE_ERR("get dts info fail\n");
+#endif
 	GSE_LOG("%s: i2c_number=%d\n", __func__, hw->i2c_num);
 	acc_driver_add(&bma4xy_init_info);
 	return 0;

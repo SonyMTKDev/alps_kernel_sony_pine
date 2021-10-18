@@ -149,6 +149,7 @@ static long acc_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 		if (copy_to_user(ptr, &sensor_data, sizeof(sensor_data)))
 			return -EFAULT;
 		return 0;
+#if 0
 	case GSENSOR_IOCTL_ENABLE_CALI:
 		if (accel_factory.fops != NULL && accel_factory.fops->enable_calibration != NULL) {
 			err = accel_factory.fops->enable_calibration();
@@ -161,6 +162,7 @@ static long acc_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 			return -EINVAL;
 		}
 		return 0;
+#endif
 	default:
 		ACC_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		return -ENOIOCTLCMD;
@@ -187,7 +189,9 @@ static long compat_acc_factory_unlocked_ioctl(struct file *filp, unsigned int cm
 	case COMPAT_GSENSOR_IOCTL_SET_CALI:
 	case COMPAT_GSENSOR_IOCTL_CLR_CALI:
 	case COMPAT_GSENSOR_IOCTL_GET_CALI:
+#if 0
 	case COMPAT_GSENSOR_IOCTL_ENABLE_CALI:
+#endif
 		ACC_LOG("compat_ion_ioctl : GSENSOR_IOCTL_XXX command is 0x%x\n", cmd);
 		return filp->f_op->unlocked_ioctl(filp, cmd,
 						  (unsigned long)compat_ptr(arg));

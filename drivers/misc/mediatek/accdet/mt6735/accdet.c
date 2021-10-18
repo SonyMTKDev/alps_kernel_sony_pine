@@ -391,20 +391,6 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		pmic_pwrap_write(ACCDET_STATE_SWCTRL, (pmic_pwrap_read(ACCDET_STATE_SWCTRL) | ACCDET_SWCTRL_IDLE_EN));
 		/*enable ACCDET unit*/
 		enable_accdet(ACCDET_SWCTRL_EN);
-       ACCDET_DEBUG("[Accdet]lubo-%d:%s_%d: accdet_eint_type:%d, cur_eint_state:%d, accdet_status:%d, accdet_state_rg:0x%x, AB:%d\n", check_rg_times, __func__, __LINE__, accdet_eint_type, cur_eint_state, accdet_status, accdet_state_rg, current_status);
-        while(check_rg_times < 5){
-            msleep(100);
-            accdet_state_rg = pmic_pwrap_read(ACCDET_STATE_RG);
-            current_status = ((pmic_pwrap_read(ACCDET_STATE_RG) & 0xc0) >> 6);
-            ACCDET_DEBUG("[Accdet]lubo-%d:%s_%d: accdet_eint_type:%d, cur_eint_state:%d, accdet_status:%d, accdet_state_rg:0x%x, AB:%d\n", check_rg_times, __func__, __LINE__, accdet_eint_type, cur_eint_state, accdet_status, accdet_state_rg, current_status);
-            if( (accdet_state_rg == 0x70ff) || (accdet_state_rg == 0x70fd) )
-            {
-                //queue_work(accdet_workqueue, &accdet_work);
-                accdet_irq_handler();
-                break;
-            }
-            check_rg_times++;
-        }
 	} else {
 /*EINT_PIN_PLUG_OUT*/
 /*Disable ACCDET*/
@@ -489,6 +475,20 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		pmic_pwrap_write(ACCDET_STATE_SWCTRL, (pmic_pwrap_read(ACCDET_STATE_SWCTRL) | ACCDET_SWCTRL_IDLE_EN));
 		/*enable ACCDET unit*/
 		enable_accdet(ACCDET_SWCTRL_EN);
+        ACCDET_DEBUG("[Accdet]lubo-%d:%s_%d: accdet_eint_type:%d, cur_eint_state:%d, accdet_status:%d, accdet_state_rg:0x%x, AB:%d\n", check_rg_times, __func__, __LINE__, accdet_eint_type, cur_eint_state, accdet_status, accdet_state_rg, current_status);
+        while(check_rg_times < 5){
+            msleep(100);
+            accdet_state_rg = pmic_pwrap_read(ACCDET_STATE_RG);
+            current_status = ((pmic_pwrap_read(ACCDET_STATE_RG) & 0xc0) >> 6);
+            ACCDET_DEBUG("[Accdet]lubo-%d:%s_%d: accdet_eint_type:%d, cur_eint_state:%d, accdet_status:%d, accdet_state_rg:0x%x, AB:%d\n", check_rg_times, __func__, __LINE__, accdet_eint_type, cur_eint_state, accdet_status, accdet_state_rg, current_status);
+            if( (accdet_state_rg == 0x70ff) || (accdet_state_rg == 0x70fd) )
+            {
+                //queue_work(accdet_workqueue, &accdet_work);
+                accdet_irq_handler();
+                break;
+            }
+            check_rg_times++;
+        }
 	} else {
 /*EINT_PIN_PLUG_OUT*/
 /*Disable ACCDET*/
@@ -655,11 +655,27 @@ static int key_check(int b)
 
 	/* 0.24V ~ */
 	/*ACCDET_DEBUG("[accdet] come in key_check!!\n");*/
-#if 1
 	if ((b < accdet_dts_data.three_key.down_key) && (b >= accdet_dts_data.three_key.up_key))
 		return DW_KEY;
 	else if ((b < accdet_dts_data.three_key.up_key) && (b >= accdet_dts_data.three_key.mid_key))
 		return UP_KEY;
+	else if (b < accdet_dts_data.three_key.mid_key)
+		return MD_KEY;
+	ACCDET_DEBUG("[accdet] leave key_check!!\n");
+	return NO_KEY;
+}
+#else
+static int key_check(int b)
+{
+	/* 0.24V ~ */
+	/*ACCDET_DEBUG("[accdet] come in key_check!!\n");*/
+#if 1
+	if ((b < accdet_dts_data.four_key.down_key_four) && (b >= accdet_dts_data.four_key.up_key_four))
+		return DW_KEY;
+	else if ((b < accdet_dts_data.four_key.up_key_four) && (b >= accdet_dts_data.four_key.voice_key_four))
+		return UP_KEY;
+	else if ((b < accdet_dts_data.four_key.voice_key_four) && (b >= accdet_dts_data.four_key.mid_key_four))
+		return AS_KEY;
 	else if ((b < accdet_dts_data.four_key.mid_key_four) && (b >= 0))
 		return MD_KEY;
 #else
@@ -672,22 +688,6 @@ static int key_check(int b)
 	else if ((b < accdet_dts_data.four_key.mid_key_four) && (b >= 0))
 		return MD_KEY;
 #endif /* #if 0 */
-	ACCDET_DEBUG("[accdet] leave key_check!!\n");
-	return NO_KEY;
-}
-#else
-static int key_check(int b)
-{
-	/* 0.24V ~ */
-	/*ACCDET_DEBUG("[accdet] come in key_check!!\n");*/
-	if ((b < accdet_dts_data.four_key.down_key_four) && (b >= accdet_dts_data.four_key.up_key_four))
-		return DW_KEY;
-	else if ((b < accdet_dts_data.four_key.up_key_four) && (b >= accdet_dts_data.four_key.voice_key_four))
-		return UP_KEY;
-	else if ((b < accdet_dts_data.four_key.voice_key_four) && (b >= accdet_dts_data.four_key.mid_key_four))
-		return AS_KEY;
-	else if (b < accdet_dts_data.four_key.mid_key_four)
-		return MD_KEY;
 	ACCDET_DEBUG("[accdet] leave key_check!!\n");
 	return NO_KEY;
 }
@@ -972,6 +972,7 @@ static inline void check_cable_type(void)
 			ACCDET_DEBUG("[Accdet]PLUG_OUT state not change!\n");
 #ifdef CONFIG_ACCDET_EINT
 			ACCDET_DEBUG("[Accdet] do not send plug out event in plug out\n");
+            //while((check_rg_times < 20) && (current_status == 3) ){
             while((check_rg_times < 20) && ((accdet_state_rg == 0x70ff) || (accdet_state_rg == 0x70fd)) ){
                 msleep(100);
                 current_status = ((pmic_pwrap_read(ACCDET_STATE_RG) & 0xc0) >> 6);
@@ -1170,6 +1171,7 @@ static inline void check_cable_type(void)
 				ACCDET_DEBUG("[Accdet] Headset has plugged out\n");
 			}
 			mutex_unlock(&accdet_eint_irq_sync_mutex);
+	}
 #endif
 #endif /* #if 0 */
 		else {

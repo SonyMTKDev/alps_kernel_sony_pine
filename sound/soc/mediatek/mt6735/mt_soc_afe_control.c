@@ -198,9 +198,6 @@ static const uint16_t kSideToneCoefficientTable32k[] = {
 	0x0e96
 };
 
-static uint32 LowLatencyDebug;
-
-
 /*
  *    function implementation
  */

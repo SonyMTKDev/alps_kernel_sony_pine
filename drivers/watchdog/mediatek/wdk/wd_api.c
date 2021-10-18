@@ -23,12 +23,16 @@
 
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
-#include<mach/mt_rtc_hw.h>
-#include<mach/mtk_rtc_hal.h>
+#include <mach/mt_rtc_hw.h>
+#include <mach/mtk_rtc_hal.h>
 
 extern u16 rtc_read(u16 addr);
 extern void rtc_write(u16 addr, u16 data);
 extern void rtc_write_trigger(void);
+
+#ifndef CONFIG_SONY_S1_SUPPORT
+#define CONFIG_SONY_S1_SUPPORT
+#endif
 
 #ifdef CONFIG_SONY_S1_SUPPORT
 #define S1_WARMBOOT_MAGIC_VAL (0xBEEF)
@@ -612,7 +616,7 @@ static void *remap_lowmem(phys_addr_t start, phys_addr_t size)
         pgprot_t prot;	
         unsigned int i;
         void *vaddr;	
-
+		
         page_start = start - offset_in_page(start);	
         page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);	
         prot = pgprot_noncached(PAGE_KERNEL);	
@@ -644,6 +648,8 @@ static void *remap_lowmem(phys_addr_t start, phys_addr_t size)
 
  }
  console_initcall(warmboot_addr_console_early_init);
+
+
 /*register restart notify and own by debug start-------
 *
 */
@@ -674,29 +680,31 @@ void arch_reset(char mode, const char *cmd)
 		reboot = 1;
 		write_magic(S1_WARMBOOT_MAGIC_VAL | (S1_WARMBOOT_S1 << 16), 0);
 #endif
+
 	}else if( cmd && !strcmp(cmd, "oem-50"))
 	{
        pr_alert("[wd_api]arch_reset oem-50 Warmboot\n");
 	   reboot = 1;
 	   write_magic(S1_WARMBOOT_MAGIC_VAL | (S1_WARMBOOT_FOTA_CACHE << 16), 0);
+
 #if defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8173)
 	} else if (cmd && !strcmp(cmd, "rpmbpk")) {
 		mtk_wd_SetNonResetReg2(0x0, 1);
 #endif
-}
+	}
 	else if (cmd && !strcmp(cmd, "oemF"))
 	{
-
- 	       u16 temp_warmboot_addr_p;
+	       
+	       u16 temp_warmboot_addr_p;
                temp_warmboot_addr_p=rtc_read(RTC_AL_DOM);
-
+               
                pr_alert("[RTC Register] rtc_read(RTC_AL_DOM)(original) = %xh\n", temp_warmboot_addr_p);              
                temp_warmboot_addr_p = 0x1111;	   
                rtc_write(RTC_AL_DOM, temp_warmboot_addr_p);	     
                rtc_write_trigger();	    
                pr_alert("[RTC Register] rtc_write(RTC_AL_DOM, %xh)\n", temp_warmboot_addr_p);	     
                pr_alert("[RTC Register] rtc_read(RTC_AL_DOM) = %xh\n", rtc_read(RTC_AL_DOM));
-
+               
                pr_alert(" [BACAL] arch_reset: Warmboot reasen= %s\n", cmd);	    
                if(warmboot_addr_p){            
                     *warmboot_addr_p=0x6f46beef;
@@ -712,14 +720,14 @@ void arch_reset(char mode, const char *cmd)
 	{
 	       u16 temp_warmboot_addr_p;
                temp_warmboot_addr_p=rtc_read(RTC_AL_DOM);
-
+               
                pr_alert("[RTC Register] rtc_read(RTC_AL_DOM)(original) = %xh\n", temp_warmboot_addr_p);              
                temp_warmboot_addr_p = 0x2200;	   
                rtc_write(RTC_AL_DOM, temp_warmboot_addr_p);	     
                rtc_write_trigger();	    
                pr_alert("[RTC Register] rtc_write(RTC_AL_DOM, %xh)\n", temp_warmboot_addr_p);	     
                pr_alert("[RTC Register] rtc_read(RTC_AL_DOM) = %xh\n", rtc_read(RTC_AL_DOM));
-
+               
                pr_alert(" [dbg] arch_reset: Warmboot reasen= %s\n", cmd);	    
                if(warmboot_addr_p){            
                     *warmboot_addr_p=0x7708beef;
@@ -735,7 +743,6 @@ void arch_reset(char mode, const char *cmd)
 		write_magic(S1_WARMBOOT_MAGIC_VAL | (S1_WARMBOOT_NORMAL << 16), 0);
 #endif
 	}
-
 	if (res)
 		pr_err("arch_reset, get wd api error %d\n", res);
 	else

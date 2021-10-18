@@ -2624,7 +2624,7 @@ static int mmc3630x_i2c_detect(struct i2c_client *client, struct i2c_board_info 
 	return 0;
 }
 
-static int mmc3630x_m_enable(int en)
+static int mmc3630x_enable(int en)
 {
 	int value = 0;
 	int err = 0;
@@ -2649,7 +2649,7 @@ static int mmc3630x_m_enable(int en)
 	return err;
 }
 
-static int mmc3630x_m_set_delay(u64 ns)
+static int mmc3630x_set_delay(u64 ns)
 {
     int value=0;
 	value = (int)ns/1000/1000;
@@ -2663,13 +2663,13 @@ static int mmc3630x_m_set_delay(u64 ns)
 
 	return 0;
 }
-static int mmc3630x_m_open_report_data(int open)
+static int mmc3630x_open_report_data(int open)
 {
 	return 0;
 }
 
 
-
+#if 0
 static int mmc3630x_o_enable(int en)
 {
   	int value =en;
@@ -2723,8 +2723,9 @@ static int mmc3630x_o_get_data(int* x ,int* y,int* z, int* status)
 	
 	return 0;
 }
+#endif
 
-static int mmc3630x_m_get_data(int* x ,int* y,int* z, int* status)
+static int mmc3630x_get_data(int* x ,int* y,int* z, int* status)
 {
 	mutex_lock(&sensor_data_mutex);
 	
@@ -2861,12 +2862,14 @@ static int mmc3630x_i2c_probe(struct i2c_client *client, const struct i2c_device
 		goto exit_misc_device_register_failed;	
 	}
 	ctl.is_use_common_factory = false;
-	ctl.m_enable = mmc3630x_m_enable;
-	ctl.m_set_delay  = mmc3630x_m_set_delay;
-	ctl.m_open_report_data = mmc3630x_m_open_report_data;
+	ctl.enable = mmc3630x_enable;
+	ctl.set_delay  = mmc3630x_set_delay;
+	ctl.open_report_data = mmc3630x_open_report_data;
+#if 0
 	ctl.o_enable = mmc3630x_o_enable;
 	ctl.o_set_delay  = mmc3630x_o_set_delay;
 	ctl.o_open_report_data = mmc3630x_o_open_report_data;
+#endif
 	ctl.is_report_input_direct = false;
 	ctl.is_support_batch = data->hw->is_batch_supported;
 	
@@ -2877,10 +2880,12 @@ static int mmc3630x_i2c_probe(struct i2c_client *client, const struct i2c_device
 		goto exit_kfree;
 	}
 
-	mag_data.div_m = CONVERT_M_DIV;
+	mag_data.div = CONVERT_M_DIV;
+#if 0
 	mag_data.div_o = CONVERT_O_DIV;
 	mag_data.get_data_o = mmc3630x_o_get_data;
-	mag_data.get_data_m = mmc3630x_m_get_data;
+#endif
+	mag_data.get_data = mmc3630x_get_data;
 	
 	err = mag_register_data_path(&mag_data);
 	if(err)

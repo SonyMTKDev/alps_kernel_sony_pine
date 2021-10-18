@@ -1431,12 +1431,12 @@ static void epl_sensor_intr_als_report_lux(void)
 //#endif
     {
         APS_LOG("[%s]: report als = %d \r\n", __func__, als);
-#if MTK_LTE
-        if((err = als_data_report(alsps_context_obj->idev, als, SENSOR_STATUS_ACCURACY_MEDIUM)))
-        {
-           APS_ERR("epl_sensor call als_data_report fail = %d\n", err);
-        }
-#else
+//#if MTK_LTE
+//        if((err = als_data_report(alsps_context_obj->idev, als, SENSOR_STATUS_ACCURACY_MEDIUM)))
+//        {
+//           APS_ERR("epl_sensor call als_data_report fail = %d\n", err);
+//        }
+//#else
         sensor_data.values[0] = als;
     	sensor_data.values[1] = epl_sensor.als.data.channels[1];
     	sensor_data.value_divide = 1;
@@ -1446,7 +1446,7 @@ static void epl_sensor_intr_als_report_lux(void)
     	    APS_ERR("get interrupt data failed\n");
     	    APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", err);
     	}
-#endif
+//#endif
     }
 
     if(epl_sensor.als.report_type == CMC_BIT_INTR_LEVEL || epl_sensor.als.report_type == CMC_BIT_DYN_INT)
@@ -4356,7 +4356,7 @@ static int __init epl_sensor_init(void)
     APS_FUN();
 
 #if ANDR_M
-    hw = get_alsps_dts_func(name, hw);
+    hw = get_alsps_dts_func(COMPATIABLE_NAME, hw);
 
     if (!hw)
     {

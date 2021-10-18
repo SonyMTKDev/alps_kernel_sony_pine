@@ -219,5 +219,5 @@ void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 	__mrdump_reboot_stop_all();
 #endif
 }
-
+#endif
 #endif

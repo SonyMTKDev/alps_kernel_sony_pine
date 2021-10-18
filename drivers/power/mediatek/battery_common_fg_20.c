@@ -1069,6 +1069,7 @@ static struct battery_data battery_main = {
 	.qns_max_charge_current = 0,
 #endif
 #endif
+#endif
 };
 
 void mt_battery_set_init_vol(int init_voltage)
@@ -2444,7 +2445,11 @@ static void mt_battery_average_method_init(BATTERY_AVG_ENUM type, unsigned int *
 					data = batt_cust_data.usb_charger_current / 100;	/* mA */
 			}
 
+#if defined(CHARGING_MAINTAIN)
+			previous_in_maintain_state = BMT_status.bat_in_maintain_state;
+#else
 			previous_in_recharge_state = BMT_status.bat_in_recharging_state;
+#endif
 		} else {
 			if (previous_charger_exist == KAL_TRUE) {
 				batteryBufferFirst = KAL_TRUE;
