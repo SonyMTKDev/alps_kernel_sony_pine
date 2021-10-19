@@ -90,6 +90,7 @@ struct step_c_control_path {
 	bool is_detector_support_batch;/* version2.used for batch mode support flag */
 	bool is_smd_support_batch;/* version2.used for batch mode support flag */
 	bool is_floor_c_support_batch;/* version2.used for batch mode support flag */
+	bool is_support_batch;/* version2.used for batch mode support flag */
 };
 
 struct step_c_data_path {

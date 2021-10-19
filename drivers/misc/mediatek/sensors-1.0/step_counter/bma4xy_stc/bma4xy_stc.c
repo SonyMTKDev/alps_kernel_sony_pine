@@ -66,7 +66,7 @@ static int step_c_get_chip_type( void )
 int step_counter_enable(u8 enable)
 {
 	if (BMA4XY_CALL_API(step_counter_enable)(enable) < 0) {
-		STEP_C_ERR("set BMA4XY_STEP_COUNTER error");
+		STEP_C_PR_ERR("set BMA4XY_STEP_COUNTER error");
 		return -EINVAL;
 	}
 	return 0;
@@ -82,14 +82,14 @@ static int step_c_set_powermode(int power_mode)
 		(obj->stepdet_enable == 0) &&
 		(obj->stepcounter_enable == 0)) {
 			err = BMA4XY_CALL_API(set_accel_enable)(0);
-			STEP_C_ERR("acc_op_mode %d", power_mode);
+			STEP_C_PR_ERR("acc_op_mode %d", power_mode);
 		}
 	else if (power_mode == 1) {
 		err = BMA4XY_CALL_API(set_accel_enable)(1);
-		STEP_C_ERR("acc_op_mode %d", power_mode);
+		STEP_C_PR_ERR("acc_op_mode %d", power_mode);
 	}
 	if (err) {
-		STEP_C_ERR("failed");
+		STEP_C_PR_ERR("failed");
 		return err;
 	}
 	return err;
@@ -106,19 +106,19 @@ static int step_c_init_client(void)
 	STEP_C_FUN();
 	err = step_c_get_chip_type();
 	if (err < 0) {
-		STEP_C_ERR("get chip type failed, err = %d\n", err);
+		STEP_C_PR_ERR("get chip type failed, err = %d\n", err);
 		return err;
 	}
 	
 	err = step_c_set_datarate(0);
 	if (err < 0) {
-		STEP_C_ERR("set data_rate failed, err = %d\n", err);
+		STEP_C_PR_ERR("set data_rate failed, err = %d\n", err);
 		return err;
 	}
 
 	err = step_counter_enable(DISABLE);
 	if (err < 0) {
-		STEP_C_ERR("set step counter enable failed, err = %d\n", err);
+		STEP_C_PR_ERR("set step counter enable failed, err = %d\n", err);
 		return err;
 	}
 	return 0;
@@ -128,7 +128,7 @@ static int step_c_open(struct inode *inode, struct file *file)
 {
 	file->private_data = obj_i2c_step;
 	if (file->private_data == NULL) {
-		STEP_C_ERR("file->private_data == NULL.\n");
+		STEP_C_PR_ERR("file->private_data == NULL.\n");
 		return -EINVAL;
 	}
 	return nonseekable_open(inode, file);
@@ -179,18 +179,18 @@ static int bma4xy_step_c_enable_nodata(int en)
 	enable = (uint8_t)(en);
 
 	if (BMA4XY_CALL_API(step_counter_enable)(en) < 0) {
-		STEP_C_ERR("set BMA4XY_STEP_COUNTER error");
+		STEP_C_PR_ERR("set BMA4XY_STEP_COUNTER error");
 		return -EINVAL;
 	}
 	if (en == 1)
 		err = BMA4XY_CALL_API(set_accel_enable)(1);
 	if (err)
-		STEP_C_ERR("set acc_op_mode failed");
+		STEP_C_PR_ERR("set acc_op_mode failed");
 	if ((en == 0) && (obj_i2c_data->sigmotion_enable== 0)&&
 		(obj_i2c_data->stepdet_enable== 0)&&(obj_i2c_data->acc_pm== 0))
 		err = BMA4XY_CALL_API(set_accel_enable)(0);
 	if (err)
-		STEP_C_ERR("set acc_op_mode failed");
+		STEP_C_PR_ERR("set acc_op_mode failed");
 	obj_i2c_data->stepcounter_enable = en;
 	return err;
 }
@@ -201,18 +201,18 @@ static int bma4xy_step_c_enable_significant(int en)
 	uint8_t enable = 0;
 	enable = (uint8_t)(en);
 	if (BMA4XY_CALL_API(significant_motion_enable)(enable) < 0) {
-		STEP_C_ERR("set BMA4XY_SIG_MOTION error");
+		STEP_C_PR_ERR("set BMA4XY_SIG_MOTION error");
 		return -EINVAL;
 	}
 	if (en == 1)
 		err = BMA4XY_CALL_API(set_accel_enable)(1);
 	if (err)
-		STEP_C_ERR("set acc_op_mode failed");
+		STEP_C_PR_ERR("set acc_op_mode failed");
 	if ((en == 0) && (obj_i2c_data->stepcounter_enable == 0) &&
 		(obj_i2c_data->stepdet_enable== 0)&&(obj_i2c_data->acc_pm== 0))
 		err = BMA4XY_CALL_API(set_accel_enable)(0);
 	if (err)
-		STEP_C_ERR("set acc_op_mode failed");
+		STEP_C_PR_ERR("set acc_op_mode failed");
 	obj_i2c_data->sigmotion_enable = en;
 	return err;
 }
@@ -221,18 +221,18 @@ static int bma4xy_step_c_enable_step_detect(int en)
 {
 	int err = 0;
 	if (BMA4XY_CALL_API(step_detector_enable)(en) < 0) {
-		STEP_C_ERR("set BMA4XY_STEP_COUNTER error");
+		STEP_C_PR_ERR("set BMA4XY_STEP_COUNTER error");
 		return -EINVAL;
 	}
 	if (en == 1)
 		err = BMA4XY_CALL_API(set_accel_enable)(1);
 	if (err)
-		STEP_C_ERR("set acc_op_mode failed");
+		STEP_C_PR_ERR("set acc_op_mode failed");
 	if ((en == 0) && (obj_i2c_data->stepcounter_enable == 0) && (obj_i2c_data->sigmotion_enable== 0)&&(
 		obj_i2c_data->acc_pm== 0))
 		err = BMA4XY_CALL_API(set_accel_enable)(0);
 	if (err)
-		STEP_C_ERR("set acc_op_mode failed");
+		STEP_C_PR_ERR("set acc_op_mode failed");
 	obj_i2c_data->stepdet_enable= en;
 	return err;
 }
@@ -243,7 +243,7 @@ static int bma4xy_step_c_get_data(u32 *value, int *status)
 	uint32_t step_counter_val = 0;
 	err = BMA4XY_CALL_API(step_counter_output)(&step_counter_val);
 	if (err) {
-		STEP_C_ERR("read failed");
+		STEP_C_PR_ERR("read failed");
 		return err;
 	}
 	*value = step_counter_val;
@@ -287,7 +287,7 @@ static int bma4xy_step_c_probe(void)
 
 	err = misc_register(&step_c_device);
 	if (err) {
-		STEP_C_ERR("misc device register failed, err = %d\n", err);
+		STEP_C_PR_ERR("misc device register failed, err = %d\n", err);
 		goto exit_misc_device_register_failed;
 	}
 
@@ -302,7 +302,7 @@ static int bma4xy_step_c_probe(void)
 	ctl.is_report_input_direct = false;
 	err =  step_c_register_control_path(&ctl);
 	if(err) {
-		STEP_C_ERR("step_c_register_control_path fail = %d\n", err);
+		STEP_C_PR_ERR("step_c_register_control_path fail = %d\n", err);
 		goto exit_create_attr_failed;
 	}
 	data.get_data = bma4xy_step_c_get_data;
@@ -311,7 +311,7 @@ static int bma4xy_step_c_probe(void)
 	data.get_data_step_d = bma4xy_stc_get_data_step_d;
 	err = step_c_register_data_path(&data);
 	if(err) {
-		STEP_C_ERR("step_c_register_data_path fail = %d\n", err);
+		STEP_C_PR_ERR("step_c_register_data_path fail = %d\n", err);
 		goto exit_create_attr_failed;
 	}
 	STEP_C_LOG("%s: OK\n", __func__);
@@ -323,7 +323,7 @@ exit_misc_device_register_failed:
 exit_init_client_failed:
 	kfree(obj);
 exit:
-	STEP_C_ERR("err = %d\n", err);
+	STEP_C_PR_ERR("err = %d\n", err);
 	return err;
 }
 
@@ -351,7 +351,7 @@ static int bma4xy_stc_local_init(void)
 */
 	STEP_C_FUN("bma4xy_stc_local_init.\n");
 	if (bma4xy_step_c_probe()) {
-		STEP_C_ERR("failed to register bma4xy step_c driver\n");
+		STEP_C_PR_ERR("failed to register bma4xy step_c driver\n");
 		return -ENODEV;
 	}
 	return 0;

@@ -846,10 +846,12 @@ int step_c_register_control_path(struct step_c_control_path *ctl)
 	cxt->step_c_ctl.floor_c_set_delay = ctl->floor_c_set_delay;
 	cxt->step_c_ctl.open_report_data = ctl->open_report_data;
 	cxt->step_c_ctl.enable_nodata = ctl->enable_nodata;
+	cxt->step_c_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->step_c_ctl.step_c_batch = ctl->step_c_batch;
 	cxt->step_c_ctl.step_c_flush = ctl->step_c_flush;
 	cxt->step_c_ctl.step_d_batch = ctl->step_d_batch;
 	cxt->step_c_ctl.step_d_flush = ctl->step_d_flush;
+	cxt->step_c_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->step_c_ctl.smd_batch = ctl->smd_batch;
 	cxt->step_c_ctl.smd_flush = ctl->smd_flush;
 	cxt->step_c_ctl.floor_c_batch = ctl->floor_c_batch;
