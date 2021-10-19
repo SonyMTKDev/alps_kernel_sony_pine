@@ -23,7 +23,9 @@
 //#include <linux/earlysuspend.h>
 #include <linux/platform_device.h>
 #include <linux/wakelock.h>
+#include <hwmsensor.h>
 #include <hwmsen_helper.h>
+#include <hwmsen_dev.h>
 #include <cust_alsps.h>
 #include <linux/input/mt.h>
 #include "epl259x.h"
@@ -1409,11 +1411,12 @@ static void epl_sensor_intr_als_report_lux(void)
     struct epl_sensor_priv *obj = epl_sensor_obj;
     u16 als;
     int err = 0;
+
 //#if ALS_DYN_INTT
 //    int last_dynamic_intt_idx = dynamic_intt_idx;
 //#endif
-#if !MTK_LTE
-    hwm_sensor_data sensor_data;
+#if MTK_LTE
+    struct hwm_sensor_data sensor_data;
 #endif
 
     APS_LOG("[%s]: IDEL MODE \r\n", __func__);
@@ -1437,7 +1440,7 @@ static void epl_sensor_intr_als_report_lux(void)
 //           APS_ERR("epl_sensor call als_data_report fail = %d\n", err);
 //        }
 //#else
-        sensor_data.values[0] = als;
+    	sensor_data.values[0] = als;
     	sensor_data.values[1] = epl_sensor.als.data.channels[1];
     	sensor_data.value_divide = 1;
     	sensor_data.status = SENSOR_STATUS_ACCURACY_MEDIUM;
@@ -4348,6 +4351,8 @@ static int alsps_remove(void)
 static int __init epl_sensor_init(void)
 {
 #if ANDR_M
+    int ret = 0;
+    struct device_node *node = NULL;
     const char *name = COMPATIABLE_NAME;
 #else /*ANDR_M*/
     struct alsps_hw *hw = get_cust_alsps_hw();
@@ -4355,10 +4360,12 @@ static int __init epl_sensor_init(void)
 
     APS_FUN();
 
-#if ANDR_M
-    hw = get_alsps_dts_func(COMPATIABLE_NAME, hw);
+    node = of_find_compatible_node(NULL,NULL,name);
 
-    if (!hw)
+#if ANDR_M
+    ret = get_alsps_dts_func(node, hw);
+
+    if (ret < 0)
     {
     	APS_ERR("get dts info fail\n");
     }
