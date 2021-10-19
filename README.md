@@ -28,9 +28,6 @@ Your directory tree should look like this:
 * aarch64-linux-android-4.9
 * KERNEL_OUT
 
-## Important!!!!
-* Build using TWRP defconfig since right now SENSORS are WIP.
-
 ## Building
 Finally, build the kernel according the next table of product names:
 
