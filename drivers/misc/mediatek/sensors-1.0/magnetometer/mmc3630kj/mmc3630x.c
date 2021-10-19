@@ -1222,7 +1222,7 @@ static ssize_t store_chip_orientation(struct device_driver *ddri, const char *bu
 	ret = kstrtoint(buf, 10, &_nDirection);
 	if (ret != 0) {
 		if (hwmsen_get_convert(_nDirection, &_pt_i2c_obj->cvt))
-			MAG_ERR("ERR: fail to set direction\n");
+			MAG_PR_ERR("ERR: fail to set direction\n");
 	}
 
 	MAGN_LOG("[%s] set direction: %d\n", __func__, _nDirection);
@@ -1243,7 +1243,7 @@ static ssize_t show_power_status(struct device_driver *ddri, char *buf)
 	struct mmc3630x_i2c_data *obj = i2c_get_clientdata(this_client);
 
 	if (obj == NULL) {
-		MAG_ERR("i2c_data obj is null!!\n");
+		MAG_PR_ERR("i2c_data obj is null!!\n");
 		return 0;
 	}
 	
@@ -2196,7 +2196,7 @@ int mmc3630x_gyroscope_operate(void *self, uint32_t command, void *buff_in, int 
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			MAG_ERR("Set delay parameter error!\n");
+			MAG_PR_ERR("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2206,7 +2206,7 @@ int mmc3630x_gyroscope_operate(void *self, uint32_t command, void *buff_in, int 
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			MAG_ERR("Enable sensor parameter error!\n");
+			MAG_PR_ERR("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2240,7 +2240,7 @@ int mmc3630x_gyroscope_operate(void *self, uint32_t command, void *buff_in, int 
 
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) || (size_out < sizeof(struct hwm_sensor_data))) {
-			MAG_ERR("get sensor data parameter error!\n");
+			MAG_PR_ERR("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			gyrosensor_data = (struct hwm_sensor_data *)buff_out;
@@ -2263,7 +2263,7 @@ int mmc3630x_gyroscope_operate(void *self, uint32_t command, void *buff_in, int 
 		}
 		break;
 	default:
-		MAG_ERR("gyrosensor operate function no this parameter %d!\n", command);
+		MAG_PR_ERR("gyrosensor operate function no this parameter %d!\n", command);
 		err = -1;
 		break;
 	}
@@ -2291,7 +2291,7 @@ int mmc3630x_rotation_vector_operate(void *self, uint32_t command, void *buff_in
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			MAG_ERR("Set delay parameter error!\n");
+			MAG_PR_ERR("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2301,7 +2301,7 @@ int mmc3630x_rotation_vector_operate(void *self, uint32_t command, void *buff_in
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			MAG_ERR("Enable sensor parameter error!\n");
+			MAG_PR_ERR("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2334,7 +2334,7 @@ int mmc3630x_rotation_vector_operate(void *self, uint32_t command, void *buff_in
 
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) || (size_out < sizeof(struct hwm_sensor_data))) {
-			MAG_ERR("get sensor data parameter error!\n");
+			MAG_PR_ERR("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			RV_data = (struct hwm_sensor_data *)buff_out;
@@ -2357,7 +2357,7 @@ int mmc3630x_rotation_vector_operate(void *self, uint32_t command, void *buff_in
 		}
 		break;
 	default:
-		MAG_ERR("RV  operate function no this parameter %d!\n", command);
+		MAG_PR_ERR("RV  operate function no this parameter %d!\n", command);
 		err = -1;
 		break;
 	}
@@ -2386,7 +2386,7 @@ int mmc3630x_gravity_operate(void *self, uint32_t command, void *buff_in, int si
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			MAG_ERR("Set delay parameter error!\n");
+			MAG_PR_ERR("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2398,7 +2398,7 @@ int mmc3630x_gravity_operate(void *self, uint32_t command, void *buff_in, int si
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			MAG_ERR("Enable sensor parameter error!\n");
+			MAG_PR_ERR("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2431,7 +2431,7 @@ int mmc3630x_gravity_operate(void *self, uint32_t command, void *buff_in, int si
 
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) || (size_out < sizeof(struct hwm_sensor_data))) {
-			MAG_ERR("get sensor data parameter error!\n");
+			MAG_PR_ERR("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			gravity_data = (struct hwm_sensor_data *)buff_out;
@@ -2454,7 +2454,7 @@ int mmc3630x_gravity_operate(void *self, uint32_t command, void *buff_in, int si
 		}
 		break;
 	default:
-		MAG_ERR("gravity operate function no this parameter %d!\n", command);
+		MAG_PR_ERR("gravity operate function no this parameter %d!\n", command);
 		err = -1;
 		break;
 	}
@@ -2483,7 +2483,7 @@ int mmc3630x_linear_accelration_operate(void *self, uint32_t command, void *buff
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			MAG_ERR("Set delay parameter error!\n");
+			MAG_PR_ERR("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2495,7 +2495,7 @@ int mmc3630x_linear_accelration_operate(void *self, uint32_t command, void *buff
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			MAG_ERR("Enable sensor parameter error!\n");
+			MAG_PR_ERR("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2529,7 +2529,7 @@ int mmc3630x_linear_accelration_operate(void *self, uint32_t command, void *buff
 
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) || (size_out < sizeof(struct hwm_sensor_data))) {
-			MAG_ERR("get sensor data parameter error!\n");
+			MAG_PR_ERR("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			LA_data = (struct hwm_sensor_data *)buff_out;
@@ -2552,7 +2552,7 @@ int mmc3630x_linear_accelration_operate(void *self, uint32_t command, void *buff
 		}
 		break;
 	default:
-		MAG_ERR("linear_accelration operate function no this parameter %d!\n", command);
+		MAG_PR_ERR("linear_accelration operate function no this parameter %d!\n", command);
 		err = -1;
 		break;
 	}
@@ -2750,6 +2750,13 @@ static int mmc3630x_i2c_probe(struct i2c_client *client, const struct i2c_device
 
     printk("%s: enter probe\n", __func__);
     
+	err = get_mag_dts_func(client->dev.of_node, hw);
+	
+	printk("mmc3630x_init addr0 = 0x%x,addr1 = 0x%x,i2c_num = %d \n",hw->i2c_addr[0],hw->i2c_addr[1],hw->i2c_num);
+	
+	if (!err)
+		MAGN_ERR("get dts info fail\n");
+
 	if(!(data = kmalloc(sizeof(struct mmc3630x_i2c_data), GFP_KERNEL)))
 	{
 		err = -ENOMEM;
@@ -2996,17 +3003,10 @@ static int mmc3630x_remove(void)
 /*----------------------------------------------------------------------------*/
 static int __init mmc3630x_init(void)
 {
-	//const char *name = "mediatek,mmc3630x";
-	const char *name = "mediatek,arima_msensor";
+	/* const char *name = "mediatek,mmc3630x";
+	const char *name = "mediatek,arima_msensor"; */
 
 	printk("mmc3630x_init\n");
-
-	hw = get_mag_dts_func(name, hw);
-	
-	printk("mmc3630x_init addr0 = 0x%x,addr1 = 0x%x,i2c_num = %d \n",hw->i2c_addr[0],hw->i2c_addr[1],hw->i2c_num);
-	
-	if (!hw)
-		MAGN_ERR("get dts info fail\n");
 
 	mag_driver_add(&mmc3630x_init_info);
 	
