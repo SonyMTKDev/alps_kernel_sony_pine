@@ -3104,6 +3104,11 @@ static int akm09918_i2c_probe(struct i2c_client *client, const struct i2c_device
 	struct mag_data_path mag_data = {0};
 
 	MAGN_LOG("akm09918_i2c_probe\n");
+
+	err = get_mag_dts_func(client->dev.of_node, hw);
+	if (!err)
+		MAGN_ERR("get dts info fail\n");
+
 	data = kzalloc(sizeof(struct akm09918_i2c_data), GFP_KERNEL);
 	if (!data) {
 		err = -ENOMEM;
@@ -3231,12 +3236,8 @@ static int akm09918_local_init(void)
 /*----------------------------------------------------------------------------*/
 static int __init akm09918_init(void)
 {
-	//const char *name = "mediatek,akm09918";
-	const char *name = "mediatek,arima_msensor";
-
-	hw = get_mag_dts_func(name, hw);
-	if (!hw)
-		MAGN_ERR("get dts info fail\n");
+	/* const char *name = "mediatek,akm09918";
+	const char *name = "mediatek,arima_msensor"; */
 
 	mag_driver_add(&akm09918_init_info);
 	return 0;
