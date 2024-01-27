@@ -488,11 +488,6 @@ int _ioctl_destroy_session(unsigned long arg)
 		)
 		primary_display_set_secondary_display(0, config.type);
 
-#if defined(OVL_TIME_SHARING)
-	if (config.type == DISP_SESSION_MEMORY)
-		primary_display_disable_ovl2mem();
-#endif
-
 	return ret;
 }
 
@@ -556,7 +551,8 @@ int _ioctl_trigger_session(unsigned long arg)
 			MMProfileLogEx(ddp_mmp_get_events()->present_fence_set, MMProfileFlagPulse,
 				       config.present_fence_idx, 0);
 		}
-		primary_display_trigger_and_merge(&config, session_id);
+		primary_display_merge_session_cmd(&config);
+		primary_display_trigger(0, NULL, 0);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
 #if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(CONFIG_MTK_EPD_SUPPORT)
 		mutex_lock(&disp_session_lock);
@@ -565,7 +561,8 @@ int _ioctl_trigger_session(unsigned long arg)
 #endif
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
 #if defined(OVL_TIME_SHARING)
-		primary_display_trigger_and_merge(&config, session_id);
+		primary_display_merge_session_cmd(&config);
+		primary_display_memory_trigger(0, NULL, 0);
 #else
 		ovl2mem_trigger(1, NULL, 0);
 #endif
@@ -1158,17 +1155,20 @@ static int _sync_convert_fb_layer_to_disp_input(unsigned int session_id, disp_in
 static int set_memory_buffer(disp_session_input_config *input)
 {
 	int i = 0;
-	unsigned int layer_id = 0;
+	int layer_id = 0;
 	unsigned int dst_size = 0;
 	unsigned long dst_mva = 0;
 	unsigned int session_id = input->session_id;
 	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
 	ovl2mem_in_config input_params[HW_OVERLAY_COUNT];
 
-	if (input->config_layer_num > MAX_OVL_CONFIG - 1)
-		return -EINVAL;
-
 	memset((void *)&input_params, 0, sizeof(input_params));
+
+	if (input->config_layer_num == 0 || input->config_layer_num > OVL_LAYER_NUM) {
+		DISPERR("set_memory_buffer, config_layer_num invalid = %d!\n",
+			input->config_layer_num);
+		return 0;
+	}
 
 	for (i = 0; i < input->config_layer_num; i++) {
 		dst_mva = 0;
@@ -1218,14 +1218,8 @@ static int set_memory_buffer(disp_session_input_config *input)
 				     input->config[i].layer_enable, input->config[i].next_buff_idx);
 		}
 
-		if (layer_id < ARRAY_SIZE(ovl2mem_in_cached_config))
-			_sync_convert_fb_layer_to_ovl_struct(input->session_id, &(input->config[i]),
-							     &ovl2mem_in_cached_config[layer_id], dst_mva);
-		else {
-			DISPERR("layer_id:%d, out of the bounds\n", layer_id);
-			continue;
-		}
-
+		_sync_convert_fb_layer_to_ovl_struct(input->session_id, &(input->config[i]),
+						     &ovl2mem_in_cached_config[layer_id], dst_mva);
 		/* /disp_sync_put_cached_layer_info(session_id, layer_id, &input->config[i], get_ovl2mem_ticket()); */
 		mtkfb_update_buf_ticket(session_id, layer_id, input->config[i].next_buff_idx, get_ovl2mem_ticket());
 		_sync_convert_fb_layer_to_disp_input(input->session_id, &(input->config[i]),
@@ -1261,18 +1255,21 @@ static int set_external_buffer(disp_session_input_config *input)
 {
 	int i = 0;
 	int ret = 0;
-	unsigned int layer_id = 0;
+	int layer_id = 0;
 	unsigned int dst_size = 0;
 	unsigned long int dst_mva = 0;
 	unsigned int session_id = 0;
 	unsigned long int mva_offset = 0;
 	disp_session_sync_info *session_info = NULL;
 
-	if (input->config_layer_num > MAX_OVL_CONFIG - 1)
-		return -EINVAL;
-
 	session_id = input->session_id;
 	session_info = disp_get_session_sync_info_for_debug(session_id);
+
+	if (input->config_layer_num == 0 || input->config_layer_num > OVL_LAYER_NUM) {
+		DISPERR("set_external_buffer, config_layer_num invalid = %d!\n",
+			input->config_layer_num);
+		return 0;
+	}
 
 	for (i = 0; i < input->config_layer_num; ++i) {
 		dst_mva = 0;
@@ -1394,7 +1391,7 @@ static inline void remove_assert_layer(disp_session_input_config *input)
 static int set_primary_buffer(disp_session_input_config *input)
 {
 	int i = 0;
-	unsigned int layer_id = 0;
+	int layer_id = 0;
 	unsigned int dst_size = 0;
 	unsigned long dst_mva = 0;
 	unsigned int session_id = 0;

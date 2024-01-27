@@ -456,7 +456,7 @@ static void disp_pwm_log(int level_1024, int log_type)
 
 }
 
-int is_disp_pwm_driver_ready(void)
+/* int is_disp_pwm_driver_ready(void)
 {
 	int status = 1;
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)\
@@ -464,7 +464,7 @@ int is_disp_pwm_driver_ready(void)
 	status = primary_display_get_init_status();
 #endif
 	return status;
-}
+} */
 
 int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 {
@@ -479,10 +479,10 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 		return -EFAULT;
 	}
 
-	if (is_disp_pwm_driver_ready() == 0) {
+	/* if (is_disp_pwm_driver_ready() == 0) {
 		PWM_ERR("[ERROR] primary display init not finish");
 		return -EFAULT;
-	}
+	} */
 
 	/* we have to change backlight after config init or max backlight changed */
 	if (g_pwm_is_change_state == true) {
